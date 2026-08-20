@@ -1,6 +1,6 @@
-import { SHAREPOINT_CONFIG } from '../config/msal-config.js';
-import { graph, graphPaged } from './graph.js';
-import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js';
+import { SHAREPOINT_CONFIG } from '../config/msal-config.js?v=1.4.0';
+import { graph, graphPaged } from './graph.js?v=1.4.0';
+import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=1.4.0';
 
 const SEMANTICS={
   start:{label:'Fecha inicio uso',aliases:['fecha inicia uso','fecha inicio uso','fechainiciauso','fechainiciouso','fecha inicio','inicio uso','fecha salida','fecha movilizacion','fecha viaje']},
@@ -307,11 +307,45 @@ async function loadReferenceMaps(){
   ]);
 }
 
+function buildExplicitFieldSelect(){
+  // Microsoft Graph no devuelve por defecto el valor visible de columnas Lookup/Persona.
+  // Cuando se pide explícitamente el nombre interno dentro de fields($select=...),
+  // devuelve el valor mostrado por SharePoint (p. ej. Usuario1 = "Nombre Apellido")
+  // además del LookupId cuando este último se solicita.
+  const names=new Set();
+  for(const [semantic,name] of Object.entries(state.mapping||{})){
+    if(!name) continue;
+    names.add(name);
+    const column=state.columns.find(c=>c.name===name);
+    if(column?.lookup || column?.personOrGroup || semantic==='requester' || semantic==='driver'){
+      names.add(`${name}LookupId`);
+    }
+  }
+  return [...names].filter(Boolean);
+}
+
 export async function loadItems(){
   if(!state.site) await resolveSite();
   if(!state.activeList) await chooseList();
-  const path=`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(state.activeList.id)}/items?$expand=fields&$top=999`;
-  state.items=await graphPaged(path,SHAREPOINT_CONFIG.maxItems);
+
+  const base=`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(state.activeList.id)}/items`;
+  const requested=buildExplicitFieldSelect();
+  let path='';
+  if(requested.length){
+    const select=requested.map(n=>encodeURIComponent(n)).join(',');
+    path=`${base}?expand=fields(select=${select})&$top=999`;
+  }else{
+    path=`${base}?$expand=fields&$top=999`;
+  }
+
+  try{
+    state.items=await graphPaged(path,SHAREPOINT_CONFIG.maxItems);
+  }catch(err){
+    // Respaldo para nombres internos poco comunes o límites de lookup del endpoint.
+    console.warn('La lectura con campos explícitos no fue aceptada; se usará lectura estándar.',err);
+    state.items=await graphPaged(`${base}?$expand=fields&$top=999`,SHAREPOINT_CONFIG.maxItems);
+  }
+
   await hydrateMissingUsers().catch(err=>console.warn('No se pudieron resolver todos los usuarios por ID',err));
   return state.items;
 }
@@ -326,18 +360,25 @@ function fieldRaw(fields,key){
   const genericMap=state.lookupMaps.get(name);
   const preferredMap=genericMap || ((column?.personOrGroup || key==='requester' || key==='driver') ? state.userMap : null);
 
-  // Para Persona/Lookup se prioriza resolver el LookupId. Así evitamos mostrar "17" en Usuario1.
+  // Si Graph devolvió expresamente el valor visible del campo, éste es la fuente preferida.
+  // Para Persona suele ser el nombre mostrado en SharePoint; para Lookup, la etiqueta visible.
+  if(direct!==undefined && direct!==null && direct!==''){
+    const cleaned=cleanLookupLabel(direct);
+    if(cleaned && !/^\d+$/.test(cleaned)) return cleaned;
+  }
+
+  // Si solo llegó el LookupId, intentar resolverlo con la lista de referencia.
   if(lookup!==undefined && lookup!==null && lookup!==''){
     const resolved=resolveLookupValue(lookup,preferredMap||state.userMap);
     if(resolved) return resolved;
   }
 
   if(direct!==undefined && direct!==null && direct!==''){
-    // Algunas respuestas de Graph entregan el ID directamente en el nombre del campo.
-    const resolved=resolveLookupValue(direct,preferredMap);
+    // Último intento: resolver un valor numérico directo mediante el mapa disponible.
+    const resolved=resolveLookupValue(direct,preferredMap||state.userMap);
     if(resolved) return resolved;
     const cleaned=cleanLookupLabel(direct);
-    if(cleaned && !(/^\d+$/.test(cleaned) && preferredMap)) return cleaned;
+    if(cleaned && !/^\d+$/.test(cleaned)) return cleaned;
   }
 
   const alt=Object.keys(fields).find(k=>compactKey(k)===normalized||compactKey(k)===`${normalized}lookupid`);

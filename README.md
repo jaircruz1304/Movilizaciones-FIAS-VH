@@ -133,3 +133,9 @@ La aplicación identifica automáticamente esta lista por la firma de columnas e
 ## Corrección v1.3 – campos Persona de SharePoint
 
 La versión 1.3 resuelve los valores numéricos de columnas Persona/Grupo (por ejemplo `Usuario1 = 50`) contra la lista oculta **User Information List** de SharePoint. La aplicación intenta obtener esa lista directamente por título mediante Microsoft Graph y, si no puede precargarla completa, consulta bajo demanda únicamente los IDs presentes en los registros de movilización. Esto evita mostrar el `LookupId` como nombre del usuario.
+
+
+## Cambios v1.4
+- Los filtros se reorganizan en dos filas amplias en escritorio y responden a 3/2/1 columnas según el ancho de pantalla.
+- La lectura de SharePoint solicita explícitamente los campos mapeados con `fields($select=...)`. Esto permite que Microsoft Graph entregue el valor visible de columnas Lookup/Persona como `Usuario1`, además del `LookupId`.
+- El valor textual devuelto por SharePoint tiene prioridad sobre el ID numérico; la resolución por User Information List queda como mecanismo de respaldo.

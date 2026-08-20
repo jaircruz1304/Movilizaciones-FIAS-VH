@@ -1,4 +1,4 @@
-import { APP_CONFIG } from '../config/msal-config.js';
+import { APP_CONFIG } from '../config/msal-config.js?v=1.4.0';
 
 export const $ = (id) => document.getElementById(id);
 export const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];

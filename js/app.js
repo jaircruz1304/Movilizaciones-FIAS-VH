@@ -1,11 +1,11 @@
-import { APP_CONFIG } from '../config/msal-config.js';
-import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics } from './auth.js';
-import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js';
-import { loadGpsData, reconcileMovements, gpsState } from './gps.js';
-import { filterMovements } from './analytics.js';
-import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js';
-import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt } from './utils.js';
-import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, bindDashboardCallbacks } from './dashboard.js';
+import { APP_CONFIG } from '../config/msal-config.js?v=1.4.0';
+import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics } from './auth.js?v=1.4.0';
+import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=1.4.0';
+import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=1.4.0';
+import { filterMovements } from './analytics.js?v=1.4.0';
+import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=1.4.0';
+import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt } from './utils.js?v=1.4.0';
+import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, bindDashboardCallbacks } from './dashboard.js?v=1.4.0';
 
 const state={all:[],filtered:[],mapMode:'coverage',ready:false};
 const VIEW_META={

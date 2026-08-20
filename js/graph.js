@@ -1,5 +1,5 @@
-import { acquireToken } from './auth.js';
-import { sleep } from './utils.js';
+import { acquireToken } from './auth.js?v=1.4.0';
+import { sleep } from './utils.js?v=1.4.0';
 
 async function fetchWithTimeout(url,options={},timeout=45000){
   const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),timeout);
