@@ -20,7 +20,7 @@ const SEMANTICS={
   status:{label:'Estado',aliases:['estado','status','estado movilizacion']}
 };
 
-const state={site:null,lists:[],activeList:null,columns:[],items:[],mapping:{},userMap:new Map(),lookupMaps:new Map()};
+const state={site:null,lists:[],activeList:null,columns:[],items:[],mapping:{},userMap:new Map(),userInfoList:null,lookupMaps:new Map()};
 export const sharepointState=state;
 
 export async function resolveSite(){
@@ -151,29 +151,131 @@ function resolveLookupValue(value,map){
 }
 
 async function findUserInformationList(){
+  if(!state.site) return null;
+  const base=`/sites/${encodeURIComponent(state.site.id)}/lists`;
   const rx=/user\s*information\s*list|userinfo|user\s*info|informaci[oó]n\s*del\s*usuario|lista\s*de\s*informaci[oó]n/i;
+
+  // 1) Si ya apareció en el descubrimiento general, reutilizarla.
   let found=state.lists.find(l=>rx.test(`${l.displayName||''} ${l.name||''}`));
   if(found) return found;
-  // Algunos sitios no devuelven la lista del sistema en la primera consulta expandida.
-  const data=await graph(`/sites/${encodeURIComponent(state.site.id)}/lists?$select=id,name,displayName,webUrl,list&$top=500`);
-  const more=data?.value||[];
-  found=more.find(l=>rx.test(`${l.displayName||''} ${l.name||''}`));
-  if(found && !state.lists.some(x=>x.id===found.id)) state.lists.push(found);
+
+  // 2) SharePoint no siempre incluye esta lista oculta en la enumeración normal.
+  // Microsoft Graph admite obtener una lista por título, por eso se consulta directamente.
+  for(const title of ['User Information List','UserInfo']){
+    try{
+      const direct=await graph(`${base}/${encodeURIComponent(title)}?$select=id,name,displayName,webUrl,list`);
+      if(direct?.id){
+        if(!state.lists.some(x=>x.id===direct.id)) state.lists.push(direct);
+        return direct;
+      }
+    }catch(err){
+      console.debug(`Lista de usuarios no accesible por título ${title}`,err?.message||err);
+    }
+  }
+
+  // 3) Respaldo: consulta filtrada por displayName, útil para listas ocultas del sistema.
+  try{
+    const filtered=await graph(`${base}?$filter=${encodeURIComponent("displayName eq 'User Information List'")}&$select=id,name,displayName,webUrl,list&$top=20`);
+    found=(filtered?.value||[]).find(l=>rx.test(`${l.displayName||''} ${l.name||''}`));
+    if(found){
+      if(!state.lists.some(x=>x.id===found.id)) state.lists.push(found);
+      return found;
+    }
+  }catch(err){
+    console.debug('No se pudo consultar User Information List mediante filtro',err?.message||err);
+  }
+
+  // 4) Último respaldo: enumeración amplia.
+  try{
+    const data=await graph(`${base}?$select=id,name,displayName,webUrl,list&$top=500`);
+    found=(data?.value||[]).find(l=>rx.test(`${l.displayName||''} ${l.name||''}`));
+    if(found && !state.lists.some(x=>x.id===found.id)) state.lists.push(found);
+  }catch(err){
+    console.debug('No se pudo enumerar listas para localizar User Information List',err?.message||err);
+  }
   return found||null;
+}
+
+function userLabelFromFields(f={}){
+  return cleanLookupLabel(
+    f.Title||f.Name||f.DisplayName||f.UserName||f.EMail||f.Email||f.SipAddress||f.Account||''
+  );
 }
 
 async function loadUserMap(){
   if(!state.site) return;
   const userList=await findUserInformationList();
-  if(!userList){ state.userMap=new Map(); return; }
-  const items=await graphPaged(`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(userList.id)}/items?$expand=fields&$top=999`,10000);
-  const map=new Map();
-  for(const it of items){
-    const f=it.fields||{};
-    const label=cleanLookupLabel(f.Title||f.Name||f.UserName||f.EMail||f.Email||f.SipAddress||'');
-    if(label) map.set(String(it.id),label);
+  state.userMap=new Map();
+  state.userInfoList=userList||null;
+  if(!userList) return;
+  try{
+    const items=await graphPaged(`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(userList.id)}/items?$expand=fields&$top=999`,20000);
+    for(const it of items){
+      const f=it.fields||{};
+      const label=userLabelFromFields(f);
+      if(!label) continue;
+      state.userMap.set(String(it.id),label);
+      for(const possible of [f.ID,f.Id,f.LookupId,f.UserInfoId]){
+        if(possible!==undefined && possible!==null && String(possible).trim()) state.userMap.set(String(possible),label);
+      }
+    }
+  }catch(err){
+    // No abortar toda la sincronización: los IDs requeridos se resolverán bajo demanda.
+    console.warn('No fue posible precargar la lista completa de usuarios; se intentará resolución por ID.',err);
   }
-  state.userMap=map;
+}
+
+function numericLookupIds(value){
+  if(value===null||value===undefined||value==='') return [];
+  if(Array.isArray(value)) return value.flatMap(numericLookupIds);
+  if(typeof value==='number') return [String(value)];
+  if(typeof value==='object'){
+    return numericLookupIds(value.LookupId??value.lookupId??value.Id??value.id??'');
+  }
+  const raw=String(value).trim();
+  if(/^\d+$/.test(raw)) return [raw];
+  if(raw.includes(';#')) return raw.split(';#').map(x=>x.trim()).filter(x=>/^\d+$/.test(x));
+  return [];
+}
+
+function collectPersonIdsFromItems(){
+  const ids=new Set();
+  for(const key of ['requester','driver']){
+    const name=state.mapping[key];
+    if(!name) continue;
+    const normalized=compactKey(name);
+    for(const it of state.items||[]){
+      const f=it.fields||{};
+      const lookupKey=Object.keys(f).find(k=>compactKey(k)===`${normalized}lookupid`);
+      const values=[lookupKey?f[lookupKey]:undefined,f[`${name}LookupId`],f[name]];
+      values.flatMap(numericLookupIds).forEach(id=>ids.add(String(id)));
+    }
+  }
+  return [...ids].filter(id=>id && !state.userMap.has(id));
+}
+
+async function hydrateMissingUsers(){
+  const ids=collectPersonIdsFromItems();
+  if(!ids.length) return;
+  const userList=state.userInfoList||await findUserInformationList();
+  if(!userList) return;
+  state.userInfoList=userList;
+
+  // Resolver solo los IDs presentes en la lista de movilizaciones. Se limita la concurrencia
+  // para no sobrecargar Microsoft Graph cuando existen muchos usuarios distintos.
+  const chunkSize=8;
+  for(let i=0;i<ids.length;i+=chunkSize){
+    const chunk=ids.slice(i,i+chunkSize);
+    await Promise.all(chunk.map(async id=>{
+      try{
+        const item=await graph(`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(userList.id)}/items/${encodeURIComponent(id)}?$expand=fields`);
+        const label=userLabelFromFields(item?.fields||{});
+        if(label) state.userMap.set(String(id),label);
+      }catch(err){
+        console.debug(`No se pudo resolver el usuario SharePoint ID ${id}`,err?.message||err);
+      }
+    }));
+  }
 }
 
 async function loadGenericLookupMaps(){
@@ -210,6 +312,7 @@ export async function loadItems(){
   if(!state.activeList) await chooseList();
   const path=`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(state.activeList.id)}/items?$expand=fields&$top=999`;
   state.items=await graphPaged(path,SHAREPOINT_CONFIG.maxItems);
+  await hydrateMissingUsers().catch(err=>console.warn('No se pudieron resolver todos los usuarios por ID',err));
   return state.items;
 }
 

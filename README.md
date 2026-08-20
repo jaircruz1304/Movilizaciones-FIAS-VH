@@ -129,3 +129,7 @@ La aplicación identifica automáticamente esta lista por la firma de columnas e
 - Los campos SharePoint de tipo **Persona** o **Lookup** ya no se muestran como identificadores numéricos cuando existe información de referencia. La aplicación intenta resolver `Usuario1LookupId` y otros lookups contra la lista interna de usuarios o la lista de referencia correspondiente.
 - Se reconoce también el nombre interno habitual `UserInfo` de la lista **User Information List** de SharePoint.
 - El mapa Leaflet quedó aislado en su propio contexto de apilamiento y el encabezado tiene prioridad visual, evitando que controles, popups o capas del mapa se superpongan al header al hacer zoom o desplazarse.
+
+## Corrección v1.3 – campos Persona de SharePoint
+
+La versión 1.3 resuelve los valores numéricos de columnas Persona/Grupo (por ejemplo `Usuario1 = 50`) contra la lista oculta **User Information List** de SharePoint. La aplicación intenta obtener esa lista directamente por título mediante Microsoft Graph y, si no puede precargarla completa, consulta bajo demanda únicamente los IDs presentes en los registros de movilización. Esto evita mostrar el `LookupId` como nombre del usuario.
