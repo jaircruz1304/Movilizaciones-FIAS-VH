@@ -31,12 +31,24 @@ export async function resolveSite(){
 }
 
 function semanticScore(columns,title=''){
-  const names=columns.flatMap(c=>[compactKey(c.name),compactKey(c.displayName)]);
+  const names=columns.flatMap(c=>[compactKey(c.name),compactKey(c.displayName)]).filter(Boolean);
   let score=0;
   for(const [key,meta] of Object.entries(SEMANTICS)){
     if(meta.aliases.some(a=>names.some(n=>n===compactKey(a)||n.includes(compactKey(a))||compactKey(a).includes(n)))) score += ['start','destination','distance'].includes(key)?5:2;
   }
   if(/moviliz|vehicul|transporte|salida|comision|recorrido/i.test(normalizeText(title))) score+=10;
+
+  // Prioridad fuerte para la lista que coincide con la estructura real reportada por FIAS.
+  const expected=(SHAREPOINT_CONFIG.expectedColumns||[]).map(compactKey).filter(Boolean);
+  let signatureHits=0;
+  for(const expectedName of expected){
+    if(names.some(n=>n===expectedName || n.includes(expectedName) || expectedName.includes(n))){
+      signatureHits++;
+      score+=12;
+    }
+  }
+  if(expected.length && signatureHits>=Math.max(6,expected.length-2)) score+=60;
+  if(expected.length && signatureHits===expected.length) score+=80;
   return score;
 }
 
@@ -51,10 +63,19 @@ export async function discoverLists(){
 
 export async function chooseList(id=''){
   if(!state.lists.length) await discoverLists();
+  const visible=state.lists.filter(x=>!(x.list?.hidden));
   const remembered=localStorage.getItem('fias.movilizaciones.listId')||'';
-  const wanted=id||SHAREPOINT_CONFIG.preferredListId||remembered;
-  let list=state.lists.find(x=>x.id===wanted);
-  if(!list) list=state.lists.filter(x=>!(x.list?.hidden))[0];
+  let list=null;
+
+  // 1) Selección explícita desde la interfaz.
+  if(id) list=visible.find(x=>x.id===id);
+  // 2) GUID fijo, si en el futuro se configura uno.
+  if(!list && SHAREPOINT_CONFIG.preferredListId) list=visible.find(x=>x.id===SHAREPOINT_CONFIG.preferredListId);
+  // 3) Para esta solución se prioriza la mejor coincidencia por firma de columnas.
+  if(!list && SHAREPOINT_CONFIG.lockToBestMatch) list=visible[0];
+  // 4) Solo como respaldo se usa la lista recordada.
+  if(!list && remembered) list=visible.find(x=>x.id===remembered);
+  if(!list) list=visible[0];
   if(!list) throw new Error('No se encontró una lista de SharePoint accesible para movilizaciones.');
   state.activeList=list;
   state.columns=(list.columns||[]).filter(c=>!c.hidden);

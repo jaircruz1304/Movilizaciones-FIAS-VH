@@ -114,3 +114,12 @@ La correlación se realiza por la ventana temporal `FECHA INICIA USO` → `FECHA
 Si SharePoint contiene vehículo o placa, se puede configurar en `GPS_CONFIG.trackerAliases` qué unidad corresponde a cada rastreador. Si no existe ese campo, la correlación se considera temporal y debe interpretarse como evidencia de referencia.
 
 El kilometraje GPS **no sustituye** el `RECORRIDO` institucional. Se muestra como contraste técnico porque ambos valores pueden diferir por ventana temporal, odómetro, puntos del dispositivo o forma de registro.
+
+
+## Fuente SharePoint configurada
+
+La fuente principal corresponde a la lista compartida del sitio `RecursosAdministrativo`:
+
+`https://fiasec.sharepoint.com/:l:/s/RecursosAdministrativo/JABGnrxRvgAqSaT9aEcQZvFfAbrh1fNSrNx-i-ixKrm_kZw?e=Ryl4oq`
+
+La aplicación identifica automáticamente esta lista por la firma de columnas esperada: FECHA INICIA USO, FECHA TERMINA, Usuario1, GRUPO, FECHA SOLICITUD, DESTINO, KM INICIAL, KM FINAL y RECORRIDO.

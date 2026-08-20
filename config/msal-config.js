@@ -11,8 +11,15 @@ export const AUTH_CONFIG = {
 export const SHAREPOINT_CONFIG = {
   host: 'fiasec.sharepoint.com',
   sitePath: '/sites/RecursosAdministrativo',
-  listShareUrl: 'https://fiasec.sharepoint.com/:l:/s/RecursosAdministrativo/JABGnrxRvgAqSaT9aEcQZvFfAbrh1fNSrNx-i-ixKrm_kZw?e=K56ycM',
+  listShareUrl: 'https://fiasec.sharepoint.com/:l:/s/RecursosAdministrativo/JABGnrxRvgAqSaT9aEcQZvFfAbrh1fNSrNx-i-ixKrm_kZw?e=Ryl4oq',
   preferredListId: '',
+  // Firma esperada de la lista de movilizaciones. Se usa para localizarla automáticamente
+  // dentro del sitio RecursosAdministrativo aunque el enlace compartido no exponga el GUID.
+  expectedColumns: [
+    'FECHA INICIA USO','FECHA TERMINA','Usuario1','GRUPO','FECHA SOLICITUD',
+    'DESTINO','KM INICIAL','KM FINAL','RECORRIDO'
+  ],
+  lockToBestMatch: true,
   maxItems: 15000
 };
 
