@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "timezone": "America/Guayaquil",
+  "eventCodes": {
+    "0": "INICIA EXCESO VELOCIDAD",
+    "1": "FINALIZA EXCESO VELOCIDAD",
+    "2": "VEHÍCULO APAGADO",
+    "3": "VEHÍCULO ENCENDIDO",
+    "4": "REINICIO DISPOSITIVO",
+    "5": "LLAMADA ENTRANTE",
+    "6": "AUTO-CALIBRACIÓN",
+    "7": "FINALIZA DETENCIÓN",
+    "8": "INICIA DETENCIÓN",
+    "9": "BOTÓN PÁNICO LIBERADO",
+    "10": "BOTÓN PÁNICO PRESIONADO",
+    "11": "BATERÍA DESCARGÁNDOSE",
+    "12": "BATERÍA CARGÁNDOSE",
+    "13": "BATERIA PRINCIPAL CONECTADA",
+    "14": "BATERIA PRINCIPAL DESCONECTADA",
+    "15": "VEHÍCULO DESBLOQUEADO",
+    "16": "VEHÍCULO BLOQUEADO",
+    "17": "PUERTAS CERRADAS",
+    "18": "PUERTAS ABIERTAS",
+    "19": "DESCONEXION BLUETOOTH",
+    "20": "CONEXION BLUETOOTH",
+    "21": "UBICACIÓN EN TIEMPO REAL",
+    "22": "REP PERIÓDICO"
+  },
+  "schema": [
+    "t",
+    "lat",
+    "lon",
+    "speed",
+    "odometer",
+    "event",
+    "place"
+  ],
+  "files": [
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-01",
+      "url": "./data/gps/pdf-8770-2026-01.json",
+      "points": 2601,
+      "start": 1767652653,
+      "end": 1769918410,
+      "odoMin": 92003,
+      "odoMax": 92144,
+      "source": "01. InformeRecorridoPlus-Enero 2026(1).pdf"
+    },
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-02",
+      "url": "./data/gps/pdf-8770-2026-02.json",
+      "points": 1142,
+      "start": 1769922010,
+      "end": 1772337611,
+      "odoMin": 92144,
+      "odoMax": 92170,
+      "source": "02. InformeRecorridoPlus Febrero 2026(1).pdf"
+    },
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-03",
+      "url": "./data/gps/pdf-8770-2026-03.json",
+      "points": 3998,
+      "start": 1772341211,
+      "end": 1775016583,
+      "odoMin": 92170,
+      "odoMax": 92497,
+      "source": "03. InformeRecorridoPlus - Marzo 2026(1).pdf"
+    },
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-04",
+      "url": "./data/gps/pdf-8770-2026-04.json",
+      "points": 9384,
+      "start": 1775020182,
+      "end": 1777608008,
+      "odoMin": 92497,
+      "odoMax": 94029,
+      "source": "04. InformeRecorridoPlus - Abril 2026(1).pdf"
+    },
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-05",
+      "url": "./data/gps/pdf-8770-2026-05.json",
+      "points": 7361,
+      "start": 1777698009,
+      "end": 1780286410,
+      "odoMin": 94022,
+      "odoMax": 94950,
+      "source": "05. InformeRecorridoPlus - Mayo 2026(1).pdf"
+    },
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-06",
+      "url": "./data/gps/pdf-8770-2026-06.json",
+      "points": 3089,
+      "start": 1780290011,
+      "end": 1782881404,
+      "odoMin": 94950,
+      "odoMax": 94975,
+      "source": "06. InformeRecorridoPlus - Junio 2026(1).pdf"
+    },
+    {
+      "tracker": "PDF-8770",
+      "month": "2026-07",
+      "url": "./data/gps/pdf-8770-2026-07.json",
+      "points": 8404,
+      "start": 1782882004,
+      "end": 1785444004,
+      "odoMin": 94975,
+      "odoMax": 95464,
+      "source": "07. InformeRecorridoPlus - Julio 2026(1).pdf"
+    }
+  ],
+  "totalPoints": 35979
+}

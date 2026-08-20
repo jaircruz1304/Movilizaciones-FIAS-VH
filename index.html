@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#102f27" />
+  <title>FIAS · Inteligencia de Movilizaciones</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div id="loading" class="loading"><div class="spinner"></div><strong id="loadingText">Inicializando...</strong></div>
+  <div id="toastZone" class="toast-zone"></div>
+
+  <section id="loginView" class="login-view">
+    <div class="login-orbit orbit-a"></div><div class="login-orbit orbit-b"></div>
+    <div class="login-card">
+      <div class="login-brand"><span>FIAS</span><div><strong>Inteligencia de Movilizaciones</strong><small>SharePoint + Rastreo GPS</small></div></div>
+      <h1>Convierta cada movilización en evidencia operativa.</h1>
+      <p>La aplicación cruza los registros institucionales de Microsoft 365 con el rastreo satelital para analizar uso, cobertura, destinos, recorridos y patrones de demanda.</p>
+      <button id="btnLogin" class="primary-action"><i class="bi bi-microsoft"></i> Iniciar sesión con Microsoft 365</button>
+      <div class="security-note"><i class="bi bi-shield-check"></i><span>La autenticación y el token se gestionan con MSAL. La aplicación no almacena contraseñas.</span></div>
+      <div id="loginDiagnostics" class="login-diagnostics"></div>
+    </div>
+  </section>
+
+  <div id="app" class="app hidden">
+    <header class="masthead">
+      <div class="brand-row">
+        <div class="brand-lockup"><span class="brand-badge">FIAS</span><div><strong>Inteligencia de Movilizaciones</strong><small id="sourceSubtitle">Microsoft 365 · GPS · Analítica territorial</small></div></div>
+        <div class="header-actions">
+          <div class="connection-pill" id="connectionPill"><span class="dot"></span><span id="connectionText">Conectando</span></div>
+          <button id="btnSync" class="icon-action" title="Sincronizar"><i class="bi bi-arrow-repeat"></i></button>
+          <button id="btnLogout" class="icon-action" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+      </div>
+      <nav class="primary-nav" aria-label="Módulos">
+        <button class="nav-tab active" data-view="overview"><i class="bi bi-grid-1x2"></i> Panorama</button>
+        <button class="nav-tab" data-view="territory"><i class="bi bi-map"></i> Territorio</button>
+        <button class="nav-tab" data-view="operations"><i class="bi bi-signpost-split"></i> Movilizaciones</button>
+        <button class="nav-tab" data-view="fleet"><i class="bi bi-truck-front"></i> Uso y demanda</button>
+        <button class="nav-tab" data-view="gps"><i class="bi bi-broadcast-pin"></i> Rastreo GPS</button>
+        <button class="nav-tab" data-view="quality"><i class="bi bi-shield-check"></i> Control de datos</button>
+      </nav>
+    </header>
+
+    <main class="workspace">
+      <section class="command-strip">
+        <div class="command-title"><span class="eyebrow">Centro de análisis</span><h2 id="viewTitle">Panorama operativo</h2><p id="viewSubtitle">Indicadores y patrones relevantes del uso institucional de vehículos.</p></div>
+        <div class="filter-grid">
+          <label class="search-field"><span>Búsqueda global</span><div class="input-wrap"><i class="bi bi-search"></i><input id="fSearch" placeholder="Destino, usuario, grupo, actividad..." /></div></label>
+          <label><span>Desde</span><input id="fFrom" type="date" /></label>
+          <label><span>Hasta</span><input id="fTo" type="date" /></label>
+          <label><span>Grupo / proyecto</span><select id="fGroup"><option value="">Todos</option></select></label>
+          <label><span>Usuario</span><select id="fRequester"><option value="">Todos</option></select></label>
+          <label><span>Vehículo</span><select id="fVehicle"><option value="">Todos</option></select></label>
+          <label><span>Actividad</span><select id="fActivity"><option value="">Todas</option></select></label>
+          <button id="btnResetFilters" class="secondary-action"><i class="bi bi-arrow-counterclockwise"></i> Limpiar</button>
+        </div>
+      </section>
+
+      <section id="view-overview" class="view active">
+        <div id="kpiGrid" class="kpi-grid"></div>
+        <div class="layout-grid">
+          <article class="panel span-8"><div class="panel-head"><div><span class="eyebrow">Demanda</span><h3>Evolución de movilizaciones y kilómetros</h3></div><div class="legend-note">Período filtrado</div></div><div class="chart-lg"><canvas id="chartTrend"></canvas></div></article>
+          <article class="panel span-4"><div class="panel-head"><div><span class="eyebrow">Destinos</span><h3>Puntos más recurrentes</h3></div></div><div id="destinationRanking" class="ranking"></div></article>
+          <article class="panel span-7"><div class="panel-head"><div><span class="eyebrow">Lectura automática</span><h3>Lo que muestran los datos</h3></div></div><div id="insightList" class="insights"></div></article>
+          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Finalidad</span><h3>Actividades predominantes</h3></div></div><div class="chart-md"><canvas id="chartActivities"></canvas></div></article>
+        </div>
+      </section>
+
+      <section id="view-territory" class="view">
+        <div class="territory-toolbar">
+          <div><span class="eyebrow">Geografía operacional</span><h3>Cobertura, rutas y concentración territorial</h3></div>
+          <div class="segmented" id="mapModes">
+            <button class="active" data-map="coverage">Cobertura</button><button data-map="routes">Rutas GPS</button><button data-map="heat">Calor GPS</button><button data-map="allgps">Histórico GPS</button>
+          </div>
+        </div>
+        <div class="territory-grid">
+          <article class="map-panel"><div id="mainMap"></div><div id="mapCaption" class="map-caption">Origen fijo: Matriz FIAS, Quito.</div></article>
+          <aside class="territory-aside">
+            <article class="panel compact"><div class="panel-head"><div><span class="eyebrow">Cobertura</span><h3>Provincias alcanzadas</h3></div></div><div id="provinceRanking" class="ranking"></div></article>
+            <article class="panel compact"><div class="panel-head"><div><span class="eyebrow">Patrones</span><h3>Corredores recurrentes</h3></div></div><div id="remoteRanking" class="ranking"></div></article>
+          </aside>
+        </div>
+      </section>
+
+      <section id="view-operations" class="view">
+        <div class="section-head"><div><span class="eyebrow">Explorador operacional</span><h3>Movilizaciones relacionadas con evidencia GPS</h3></div><button id="btnExport" class="secondary-action"><i class="bi bi-download"></i> Exportar CSV</button></div>
+        <div class="table-panel"><div class="table-scroll"><table><thead><tr><th>Inicio</th><th>Usuario</th><th>Grupo</th><th>Destino / finalidad</th><th>Km SP</th><th>GPS</th><th>Km GPS</th><th>Cobertura</th><th>Control</th></tr></thead><tbody id="movementRows"></tbody></table></div></div>
+      </section>
+
+      <section id="view-fleet" class="view">
+        <div class="layout-grid">
+          <article class="panel span-6"><div class="panel-head"><div><span class="eyebrow">Demanda institucional</span><h3>Movilizaciones por grupo / proyecto</h3></div></div><div class="chart-lg"><canvas id="chartGroups"></canvas></div></article>
+          <article class="panel span-6"><div class="panel-head"><div><span class="eyebrow">Usuarios</span><h3>Solicitantes con mayor utilización</h3></div></div><div class="chart-lg"><canvas id="chartRequesters"></canvas></div></article>
+          <article class="panel span-6"><div class="panel-head"><div><span class="eyebrow">Vehículos</span><h3>Comparación de unidades</h3></div></div><div class="chart-lg"><canvas id="chartVehicles"></canvas></div></article>
+          <article class="panel span-6"><div class="panel-head"><div><span class="eyebrow">Calendario</span><h3>Demanda por día de la semana</h3></div></div><div class="chart-lg"><canvas id="chartWeekday"></canvas></div></article>
+        </div>
+      </section>
+
+      <section id="view-gps" class="view">
+        <div id="gpsKpis" class="kpi-grid gps-kpis"></div>
+        <div class="layout-grid">
+          <article class="panel span-7"><div class="panel-head"><div><span class="eyebrow">Rastreo</span><h3>Eventos del dispositivo</h3></div></div><div class="chart-lg"><canvas id="chartGpsEvents"></canvas></div></article>
+          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Fuente satelital</span><h3>Reportes incorporados</h3></div></div><div id="gpsFiles" class="source-list"></div></article>
+          <article class="panel span-12"><div class="panel-head"><div><span class="eyebrow">Conciliación</span><h3>SharePoint frente a kilometraje GPS</h3></div></div><div class="chart-lg"><canvas id="chartKmCompare"></canvas></div></article>
+        </div>
+      </section>
+
+      <section id="view-quality" class="view">
+        <div class="layout-grid">
+          <article class="panel span-7"><div class="panel-head"><div><span class="eyebrow">Completitud</span><h3>Cobertura de campos para análisis</h3></div></div><div id="qualityGrid" class="quality-grid"></div></article>
+          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Fuente SharePoint</span><h3>Conexión y lista activa</h3></div><button id="btnOpenSource" class="text-action">Configurar</button></div><div id="sourceDiagnostics" class="diagnostics"></div></article>
+          <article class="panel span-12"><div class="panel-head"><div><span class="eyebrow">Excepciones</span><h3>Registros que requieren revisión</h3></div></div><div class="table-scroll"><table><thead><tr><th>Fecha</th><th>Destino</th><th>Usuario</th><th>Observación automática</th></tr></thead><tbody id="anomalyRows"></tbody></table></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="detailDrawer" class="drawer" aria-hidden="true"><div class="drawer-card"><div class="drawer-head"><div><span class="eyebrow">Movilización</span><h3 id="detailTitle">Detalle</h3></div><button id="btnCloseDrawer" class="icon-action"><i class="bi bi-x-lg"></i></button></div><div id="detailBody" class="drawer-body"></div></div></div>
+
+  <div id="sourceModal" class="modal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">Configuración</span><h3>Fuente SharePoint y mapeo de campos</h3></div><button id="btnCloseSource" class="icon-action"><i class="bi bi-x-lg"></i></button></div><div class="modal-body"><div id="listChooser" class="source-list"></div><div class="divider"></div><div id="mappingEditor" class="mapping-grid"></div><button id="btnApplyMapping" class="primary-action small">Aplicar mapeo y reprocesar</button></div></div></div>
+
+  <script src="https://alcdn.msauth.net/browser/2.32.0/js/msal-browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
