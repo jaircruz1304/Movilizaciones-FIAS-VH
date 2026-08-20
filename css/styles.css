@@ -19,3 +19,29 @@
 @media(max-width:1350px){.command-strip{grid-template-columns:1fr}.filter-grid{grid-template-columns:repeat(4,1fr)}.search-field{grid-column:span 2}.kpi-grid{grid-template-columns:repeat(3,1fr)}.territory-grid{grid-template-columns:1fr}.territory-aside{grid-template-columns:1fr 1fr}.span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 12}.detail-summary{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:800px){.brand-row,.primary-nav,.workspace{padding-left:15px;padding-right:15px}.brand-lockup small{display:none}.connection-pill{display:none}.filter-grid{grid-template-columns:1fr 1fr}.search-field{grid-column:span 2}.kpi-grid{grid-template-columns:1fr 1fr}.territory-aside{grid-template-columns:1fr}.territory-toolbar,.section-head{align-items:flex-start;flex-direction:column}.segmented{max-width:100%;overflow:auto}.quality-grid{grid-template-columns:1fr 1fr}.mapping-grid{grid-template-columns:1fr}.detail-summary{grid-template-columns:1fr 1fr}.login-card{padding:25px}.drawer,.modal{padding:0}.drawer-card,.modal-card{border-radius:20px 20px 0 0;max-height:100vh}}
 @media(max-width:520px){.filter-grid{grid-template-columns:1fr}.search-field{grid-column:span 1}.kpi-grid,.quality-grid{grid-template-columns:1fr}.primary-nav{gap:0}.nav-tab{padding-left:9px;padding-right:9px}.nav-tab i{display:none}.detail-summary{grid-template-columns:1fr}}
+
+/* ===== Correcciones v1.2: Leaflet y jerarquía visual =====
+   Leaflet usa panes internos con z-index altos (400-1000). El mapa se aísla en
+   su propio contexto de apilamiento para que nunca pueda cubrir el masthead. */
+.masthead{
+  z-index:2000;
+  isolation:isolate;
+}
+.map-panel,
+#mainMap,
+.detail-map{
+  position:relative;
+  z-index:0;
+  isolation:isolate;
+}
+.leaflet-container{
+  position:relative;
+  z-index:0 !important;
+}
+/* Los controles y popups continúan sobre el mapa, pero dentro de su contexto aislado. */
+.map-panel .leaflet-control-container,
+.map-panel .leaflet-pane,
+.detail-map .leaflet-control-container,
+.detail-map .leaflet-pane{
+  max-width:100%;
+}

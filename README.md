@@ -123,3 +123,9 @@ La fuente principal corresponde a la lista compartida del sitio `RecursosAdminis
 `https://fiasec.sharepoint.com/:l:/s/RecursosAdministrativo/JABGnrxRvgAqSaT9aEcQZvFfAbrh1fNSrNx-i-ixKrm_kZw?e=Ryl4oq`
 
 La aplicación identifica automáticamente esta lista por la firma de columnas esperada: FECHA INICIA USO, FECHA TERMINA, Usuario1, GRUPO, FECHA SOLICITUD, DESTINO, KM INICIAL, KM FINAL y RECORRIDO.
+
+## Ajustes v1.2
+
+- Los campos SharePoint de tipo **Persona** o **Lookup** ya no se muestran como identificadores numéricos cuando existe información de referencia. La aplicación intenta resolver `Usuario1LookupId` y otros lookups contra la lista interna de usuarios o la lista de referencia correspondiente.
+- Se reconoce también el nombre interno habitual `UserInfo` de la lista **User Information List** de SharePoint.
+- El mapa Leaflet quedó aislado en su propio contexto de apilamiento y el encabezado tiene prioridad visual, evitando que controles, popups o capas del mapa se superpongan al header al hacer zoom o desplazarse.

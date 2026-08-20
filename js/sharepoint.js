@@ -20,7 +20,7 @@ const SEMANTICS={
   status:{label:'Estado',aliases:['estado','status','estado movilizacion']}
 };
 
-const state={site:null,lists:[],activeList:null,columns:[],items:[],mapping:{},userMap:new Map()};
+const state={site:null,lists:[],activeList:null,columns:[],items:[],mapping:{},userMap:new Map(),lookupMaps:new Map()};
 export const sharepointState=state;
 
 export async function resolveSite(){
@@ -54,7 +54,7 @@ function semanticScore(columns,title=''){
 
 export async function discoverLists(){
   const site=await resolveSite();
-  const path=`/sites/${encodeURIComponent(site.id)}/lists?$select=id,name,displayName,webUrl,list&$expand=columns($select=id,name,displayName,hidden,readOnly)&$top=200`;
+  const path=`/sites/${encodeURIComponent(site.id)}/lists?$select=id,name,displayName,webUrl,list&$expand=columns&$top=200`;
   const data=await graph(path);
   const all=(data?.value||[]).map(l=>({...l,score:semanticScore(l.columns||[],l.displayName||l.name)}));
   state.lists=all.sort((a,b)=>b.score-a.score);
@@ -81,7 +81,7 @@ export async function chooseList(id=''){
   state.columns=(list.columns||[]).filter(c=>!c.hidden);
   localStorage.setItem('fias.movilizaciones.listId',list.id);
   state.mapping=detectMapping(state.columns);
-  await loadUserMap().catch(err=>console.warn('No se pudo resolver User Information List',err));
+  await loadReferenceMaps().catch(err=>console.warn('No se pudieron resolver referencias de Persona/Lookup',err));
   return list;
 }
 
@@ -114,12 +114,95 @@ export function saveMapping(mapping){
   if(state.activeList) localStorage.setItem(`fias.movilizaciones.mapping.${state.activeList.id}`,JSON.stringify(state.mapping));
 }
 
+function cleanLookupLabel(value){
+  if(value===null||value===undefined) return '';
+  if(Array.isArray(value)) return value.map(cleanLookupLabel).filter(Boolean).join(', ');
+  if(typeof value==='object') return textValue(value);
+  const s=String(value).trim();
+  // Formatos clásicos de SharePoint: "12;#Nombre" o "12;#Nombre;#18;#Otro".
+  if(s.includes(';#')){
+    const parts=s.split(';#').map(x=>x.trim()).filter(Boolean);
+    const labels=parts.filter(x=>!/^\d+$/.test(x));
+    if(labels.length) return labels.join(', ');
+  }
+  return s;
+}
+
+function resolveLookupValue(value,map){
+  if(value===null||value===undefined||value==='') return '';
+  if(Array.isArray(value)) return value.map(v=>resolveLookupValue(v,map)).filter(Boolean).join(', ');
+  if(typeof value==='object') return textValue(value);
+  const raw=String(value).trim();
+  if(raw.includes(';#')){
+    const parts=raw.split(';#').map(x=>x.trim()).filter(Boolean);
+    const out=[];
+    for(let i=0;i<parts.length;i++){
+      const part=parts[i];
+      if(/^\d+$/.test(part)){
+        const found=map?.get(String(part));
+        if(found) out.push(found);
+        else if(parts[i+1] && !/^\d+$/.test(parts[i+1])) out.push(parts[++i]);
+      }else out.push(part);
+    }
+    return [...new Set(out.filter(Boolean))].join(', ');
+  }
+  if(/^\d+$/.test(raw)) return map?.get(raw)||'';
+  return cleanLookupLabel(raw);
+}
+
+async function findUserInformationList(){
+  const rx=/user\s*information\s*list|userinfo|user\s*info|informaci[oó]n\s*del\s*usuario|lista\s*de\s*informaci[oó]n/i;
+  let found=state.lists.find(l=>rx.test(`${l.displayName||''} ${l.name||''}`));
+  if(found) return found;
+  // Algunos sitios no devuelven la lista del sistema en la primera consulta expandida.
+  const data=await graph(`/sites/${encodeURIComponent(state.site.id)}/lists?$select=id,name,displayName,webUrl,list&$top=500`);
+  const more=data?.value||[];
+  found=more.find(l=>rx.test(`${l.displayName||''} ${l.name||''}`));
+  if(found && !state.lists.some(x=>x.id===found.id)) state.lists.push(found);
+  return found||null;
+}
+
 async function loadUserMap(){
   if(!state.site) return;
-  const userList=state.lists.find(l=>/user information list|informaci[oó]n del usuario/i.test(l.displayName||l.name||''));
-  if(!userList) return;
-  const items=await graphPaged(`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(userList.id)}/items?$expand=fields&$top=999`,5000);
-  state.userMap=new Map(items.map(it=>[String(it.id),it.fields?.Title||it.fields?.Name||it.fields?.EMail||`Usuario ${it.id}`]));
+  const userList=await findUserInformationList();
+  if(!userList){ state.userMap=new Map(); return; }
+  const items=await graphPaged(`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(userList.id)}/items?$expand=fields&$top=999`,10000);
+  const map=new Map();
+  for(const it of items){
+    const f=it.fields||{};
+    const label=cleanLookupLabel(f.Title||f.Name||f.UserName||f.EMail||f.Email||f.SipAddress||'');
+    if(label) map.set(String(it.id),label);
+  }
+  state.userMap=map;
+}
+
+async function loadGenericLookupMaps(){
+  state.lookupMaps=new Map();
+  if(!state.site||!state.columns?.length) return;
+  const relevant=new Set(Object.values(state.mapping||{}).filter(Boolean));
+  for(const col of state.columns){
+    if(!relevant.has(col.name) || !col.lookup?.listId) continue;
+    try{
+      const targetColumn=col.lookup.lookupColumn||'Title';
+      const items=await graphPaged(`/sites/${encodeURIComponent(state.site.id)}/lists/${encodeURIComponent(col.lookup.listId)}/items?$expand=fields&$top=999`,10000);
+      const map=new Map();
+      for(const it of items){
+        const f=it.fields||{};
+        const label=cleanLookupLabel(f[targetColumn]??f.Title??f.Name??f.Value??'');
+        if(label) map.set(String(it.id),label);
+      }
+      if(map.size) state.lookupMaps.set(col.name,map);
+    }catch(err){
+      console.warn(`No se pudo resolver Lookup ${col.displayName||col.name}`,err);
+    }
+  }
+}
+
+async function loadReferenceMaps(){
+  await Promise.all([
+    loadUserMap().catch(err=>console.warn('No se pudo resolver User Information List',err)),
+    loadGenericLookupMaps().catch(err=>console.warn('No se pudieron resolver Lookup de la lista',err))
+  ]);
 }
 
 export async function loadItems(){
@@ -132,15 +215,34 @@ export async function loadItems(){
 
 function fieldRaw(fields,key){
   const name=state.mapping[key]; if(!name) return '';
-  if(fields[name]!==undefined) return fields[name];
-  const lookup=fields[`${name}LookupId`];
-  if(lookup!==undefined){
-    if(Array.isArray(lookup)) return lookup.map(x=>state.userMap.get(String(x))||x);
-    return state.userMap.get(String(lookup))||lookup;
-  }
+  const direct=fields[name];
   const normalized=compactKey(name);
+  const lookupKey=Object.keys(fields).find(k=>compactKey(k)===`${normalized}lookupid`);
+  const lookup=lookupKey?fields[lookupKey]:fields[`${name}LookupId`];
+  const column=state.columns.find(c=>c.name===name);
+  const genericMap=state.lookupMaps.get(name);
+  const preferredMap=genericMap || ((column?.personOrGroup || key==='requester' || key==='driver') ? state.userMap : null);
+
+  // Para Persona/Lookup se prioriza resolver el LookupId. Así evitamos mostrar "17" en Usuario1.
+  if(lookup!==undefined && lookup!==null && lookup!==''){
+    const resolved=resolveLookupValue(lookup,preferredMap||state.userMap);
+    if(resolved) return resolved;
+  }
+
+  if(direct!==undefined && direct!==null && direct!==''){
+    // Algunas respuestas de Graph entregan el ID directamente en el nombre del campo.
+    const resolved=resolveLookupValue(direct,preferredMap);
+    if(resolved) return resolved;
+    const cleaned=cleanLookupLabel(direct);
+    if(cleaned && !(/^\d+$/.test(cleaned) && preferredMap)) return cleaned;
+  }
+
   const alt=Object.keys(fields).find(k=>compactKey(k)===normalized||compactKey(k)===`${normalized}lookupid`);
-  return alt?fields[alt]:'';
+  if(alt){
+    const resolved=resolveLookupValue(fields[alt],preferredMap||state.userMap);
+    return resolved||cleanLookupLabel(fields[alt]);
+  }
+  return '';
 }
 
 const PLACE_WORDS=['quito','cayambe','cotacachi','ibarra','manta','portoviejo','machala','guayaquil','cuenca','latacunga','salcedo','ambato','riobamba','macas','puyo','tena','archidona','loreto','otavalo','atuntaqui','machachi','sangolqui','tabacundo','pedro moncayo','esmeraldas','loja','zamora','el pangui','sucumbios','lago agrio','orellana','coca','manabi','imbabura','cotopaxi','tungurahua','chimborazo','napo','pastaza','pichincha','morona santiago'];
