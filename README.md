@@ -34,6 +34,9 @@ fias-movilizaciones/
 │   ├── maps.js
 │   ├── dashboard.js
 │   └── utils.js
+├── assets/
+│   └── images/
+│       └── fias-logo.svg
 ├── data/
 │   └── gps/
 │       ├── manifest.json
@@ -139,3 +142,11 @@ La versión 1.3 resuelve los valores numéricos de columnas Persona/Grupo (por e
 - Los filtros se reorganizan en dos filas amplias en escritorio y responden a 3/2/1 columnas según el ancho de pantalla.
 - La lectura de SharePoint solicita explícitamente los campos mapeados con `fields($select=...)`. Esto permite que Microsoft Graph entregue el valor visible de columnas Lookup/Persona como `Usuario1`, además del `LookupId`.
 - El valor textual devuelto por SharePoint tiene prioridad sobre el ID numérico; la resolución por User Information List queda como mecanismo de respaldo.
+
+
+## Cambios v1.5 – identidad visual y autoría
+- Se sustituyó el badge genérico `FIAS` por un identificador vectorial institucional para la pantalla de acceso, cabecera y pie de página.
+- Los botones de **Actualizar** y **Salir** ahora tienen contraste explícito, icono y texto en escritorio; en móvil se compactan automáticamente.
+- Se reforzó la lectura visual del menú principal y del estado de conexión.
+- Se incorporó el crédito permanente **Desarrollado por: Jair Cruz** con enlace a LinkedIn: https://www.linkedin.com/in/jair-cruz-gallegos-65998776/
+- Versión visual: `1.5.0`.

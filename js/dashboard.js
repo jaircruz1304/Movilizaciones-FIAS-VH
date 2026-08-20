@@ -1,9 +1,9 @@
-import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=1.4.0';
-import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights } from './analytics.js?v=1.4.0';
-import { gpsSummary, gpsState } from './gps.js?v=1.4.0';
-import { sharepointState, SEMANTICS } from './sharepoint.js?v=1.4.0';
-import { authDiagnostics } from './auth.js?v=1.4.0';
-import { showTrip } from './maps.js?v=1.4.0';
+import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=1.5.0';
+import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights } from './analytics.js?v=1.5.0';
+import { gpsSummary, gpsState } from './gps.js?v=1.5.0';
+import { sharepointState, SEMANTICS } from './sharepoint.js?v=1.5.0';
+import { authDiagnostics } from './auth.js?v=1.5.0';
+import { showTrip } from './maps.js?v=1.5.0';
 
 const charts={};
 let currentRows=[];

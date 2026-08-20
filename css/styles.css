@@ -45,3 +45,67 @@
 .detail-map .leaflet-pane{
   max-width:100%;
 }
+
+
+/* ===== Identidad visual y cabecera v1.5 ===== */
+.login-brand{align-items:center;gap:18px;margin-bottom:28px}
+.login-fias-logo{width:210px;max-width:43%;height:auto;display:block;filter:drop-shadow(0 5px 12px rgba(18,61,49,.08))}
+.login-product{padding-left:17px;border-left:1px solid #d9e5df}
+.login-product strong{font-size:1.06rem;color:var(--forest)}
+.login-product small{margin-top:5px;color:var(--muted)}
+
+.brand-lockup{gap:14px;min-width:0}
+.fias-logo-shell{width:146px;height:58px;flex:0 0 auto;background:#fff;border:1px solid rgba(255,255,255,.58);border-radius:14px;padding:5px 8px;display:flex;align-items:center;justify-content:center;box-shadow:0 7px 18px rgba(4,29,21,.14);text-decoration:none}
+.fias-logo{width:100%;height:100%;object-fit:contain;display:block}
+.product-lockup{min-width:0}
+.product-lockup strong{display:block;font-size:1.03rem;letter-spacing:-.015em;color:#fff}
+.product-lockup small{display:block;color:#c8ddd4;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:570px}
+.brand-badge{display:none!important}
+
+.header-actions{gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.header-action{height:41px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(255,255,255,.10);color:#fff;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:800;transition:.16s ease;box-shadow:0 5px 14px rgba(0,0,0,.06)}
+.header-action i{font-size:1.05rem;color:#aee8c5}
+.header-action:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.42);transform:translateY(-1px)}
+.header-action-light{background:#fff;color:var(--forest);border-color:#fff}
+.header-action-light i{color:var(--forest)}
+.header-action-light:hover{background:#edf8f2;border-color:#edf8f2}
+
+/* Mejor lectura del menú principal */
+.primary-nav{gap:6px}
+.nav-tab{border-radius:10px 10px 0 0;padding:11px 14px 12px;color:#c8d9d2}
+.nav-tab i{color:#9fc8b6}
+.nav-tab.active{background:rgba(255,255,255,.08);color:#fff;border-bottom-color:#9fe3bb}
+.nav-tab.active i,.nav-tab:hover i{color:#c6f0d7}
+
+/* Crédito de desarrollo */
+.developer-signature{font-size:.78rem;color:#66766f;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.developer-signature a{display:inline-flex;align-items:center;gap:5px;color:#0a66c2;text-decoration:none;font-weight:800}
+.developer-signature a:hover{text-decoration:underline}
+.developer-signature .bi-linkedin{font-size:1rem}
+.login-developer{margin-top:19px;padding-top:15px;border-top:1px solid #e5ece8;justify-content:flex-end}
+.app-footer{border-top:1px solid #dce5df;background:#eef3f0;margin-top:8px}
+.footer-inner{max-width:1600px;margin:auto;padding:14px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.footer-product{display:flex;align-items:center;gap:10px;color:#66766f;font-size:.76rem}
+.footer-product img{width:72px;height:30px;object-fit:contain;mix-blend-mode:multiply}
+
+/* Los iconos de botones genéricos siempre deben tener contraste. */
+.icon-action{color:var(--forest);background:#fff;border-color:#dfe7e2}
+.icon-action i{color:currentColor}
+.masthead .icon-action{color:var(--forest)}
+
+@media(max-width:900px){
+  .fias-logo-shell{width:118px;height:50px}
+  .product-lockup strong{font-size:.96rem}
+  .header-action span{display:none}
+  .header-action{width:41px;padding:0}
+  .login-brand{align-items:flex-start;flex-direction:column}
+  .login-fias-logo{max-width:none;width:190px}
+  .login-product{border-left:0;border-top:1px solid #d9e5df;padding:12px 0 0}
+  .footer-inner{padding-left:15px;padding-right:15px;align-items:flex-start;flex-direction:column}
+}
+@media(max-width:560px){
+  .brand-row{align-items:flex-start}
+  .fias-logo-shell{width:102px;height:45px;border-radius:11px}
+  .product-lockup small{max-width:180px}
+  .footer-product span{display:none}
+}

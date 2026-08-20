@@ -43,5 +43,5 @@ export const APP_CONFIG = {
   name: 'FIAS · Inteligencia de Movilizaciones',
   timezone: 'America/Guayaquil',
   locale: 'es-EC',
-  version: '1.4.0'
+  version: '1.5.0'
 };

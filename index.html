@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.4.0" />
+  <link rel="stylesheet" href="./css/styles.css?v=1.5.0" />
 </head>
 <body>
   <div id="loading" class="loading"><div class="spinner"></div><strong id="loadingText">Inicializando...</strong></div>
@@ -17,23 +17,24 @@
   <section id="loginView" class="login-view">
     <div class="login-orbit orbit-a"></div><div class="login-orbit orbit-b"></div>
     <div class="login-card">
-      <div class="login-brand"><span>FIAS</span><div><strong>Inteligencia de Movilizaciones</strong><small>SharePoint + Rastreo GPS</small></div></div>
+      <div class="login-brand"><img class="login-fias-logo" src="./assets/images/fias-logo.svg" alt="Fondo de Inversión Ambiental Sostenible (FIAS)" /><div class="login-product"><strong>Inteligencia de Movilizaciones</strong><small>SharePoint + Rastreo GPS</small></div></div>
       <h1>Convierta cada movilización en evidencia operativa.</h1>
       <p>La aplicación cruza los registros institucionales de Microsoft 365 con el rastreo satelital para analizar uso, cobertura, destinos, recorridos y patrones de demanda.</p>
       <button id="btnLogin" class="primary-action"><i class="bi bi-microsoft"></i> Iniciar sesión con Microsoft 365</button>
       <div class="security-note"><i class="bi bi-shield-check"></i><span>La autenticación y el token se gestionan con MSAL. La aplicación no almacena contraseñas.</span></div>
       <div id="loginDiagnostics" class="login-diagnostics"></div>
+      <div class="developer-signature login-developer">Desarrollado por: <a href="https://www.linkedin.com/in/jair-cruz-gallegos-65998776/" target="_blank" rel="noopener noreferrer">Jair Cruz <i class="bi bi-linkedin" aria-hidden="true"></i></a></div>
     </div>
   </section>
 
   <div id="app" class="app hidden">
     <header class="masthead">
       <div class="brand-row">
-        <div class="brand-lockup"><span class="brand-badge">FIAS</span><div><strong>Inteligencia de Movilizaciones</strong><small id="sourceSubtitle">Microsoft 365 · GPS · Analítica territorial</small></div></div>
+        <div class="brand-lockup"><a class="fias-logo-shell" href="https://fias.org.ec/" target="_blank" rel="noopener noreferrer" aria-label="Sitio oficial del FIAS"><img class="fias-logo" src="./assets/images/fias-logo.svg" alt="FIAS - Fondo de Inversión Ambiental Sostenible" /></a><div class="product-lockup"><strong>Inteligencia de Movilizaciones</strong><small id="sourceSubtitle">Microsoft 365 · GPS · Analítica territorial</small></div></div>
         <div class="header-actions">
           <div class="connection-pill" id="connectionPill"><span class="dot"></span><span id="connectionText">Conectando</span></div>
-          <button id="btnSync" class="icon-action" title="Sincronizar"><i class="bi bi-arrow-repeat"></i></button>
-          <button id="btnLogout" class="icon-action" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></button>
+          <button id="btnSync" class="header-action" title="Sincronizar datos" aria-label="Sincronizar datos"><i class="bi bi-arrow-repeat"></i><span>Actualizar</span></button>
+          <button id="btnLogout" class="header-action header-action-light" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="bi bi-box-arrow-right"></i><span>Salir</span></button>
         </div>
       </div>
       <nav class="primary-nav" aria-label="Módulos">
@@ -118,6 +119,12 @@
         </div>
       </section>
     </main>
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <div class="footer-product"><img src="./assets/images/fias-logo.svg" alt="FIAS" /><span>Inteligencia de Movilizaciones · Plataforma administrativa</span></div>
+        <div class="developer-signature">Desarrollado por: <a href="https://www.linkedin.com/in/jair-cruz-gallegos-65998776/" target="_blank" rel="noopener noreferrer">Jair Cruz <i class="bi bi-linkedin" aria-hidden="true"></i></a></div>
+      </div>
+    </footer>
   </div>
 
   <div id="detailDrawer" class="drawer" aria-hidden="true"><div class="drawer-card"><div class="drawer-head"><div><span class="eyebrow">Movilización</span><h3 id="detailTitle">Detalle</h3></div><button id="btnCloseDrawer" class="icon-action"><i class="bi bi-x-lg"></i></button></div><div id="detailBody" class="drawer-body"></div></div></div>
@@ -128,6 +135,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <script type="module" src="./js/app.js?v=1.4.0"></script>
+  <script type="module" src="./js/app.js?v=1.5.0"></script>
 </body>
 </html>

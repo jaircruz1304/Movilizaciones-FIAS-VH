@@ -1,5 +1,5 @@
-import { GPS_CONFIG } from '../config/msal-config.js?v=1.4.0';
-import { haversineKm, normalizeText, percentile } from './utils.js?v=1.4.0';
+import { GPS_CONFIG } from '../config/msal-config.js?v=1.5.0';
+import { haversineKm, normalizeText, percentile } from './utils.js?v=1.5.0';
 
 const gpsState={manifest:null,points:[],trackers:new Map(),loaded:false};
 export { gpsState };
