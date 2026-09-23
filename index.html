@@ -4,11 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#102f27" />
+  <meta name="description" content="FIAS · Inteligencia de Movilizaciones: SharePoint, rastreo GPS y analítica territorial." />
   <title>FIAS · Inteligencia de Movilizaciones</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://fias.org.ec" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.5.0" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.1.0" />
+
 </head>
 <body>
   <div id="loading" class="loading"><div class="spinner"></div><strong id="loadingText">Inicializando...</strong></div>
@@ -17,11 +20,15 @@
   <section id="loginView" class="login-view">
     <div class="login-orbit orbit-a"></div><div class="login-orbit orbit-b"></div>
     <div class="login-card">
-      <div class="login-brand"><img class="login-fias-logo" src="./assets/images/fias-logo.svg" alt="Fondo de Inversión Ambiental Sostenible (FIAS)" /><div class="login-product"><strong>Inteligencia de Movilizaciones</strong><small>SharePoint + Rastreo GPS</small></div></div>
-      <h1>Convierta cada movilización en evidencia operativa.</h1>
-      <p>La aplicación cruza los registros institucionales de Microsoft 365 con el rastreo satelital para analizar uso, cobertura, destinos, recorridos y patrones de demanda.</p>
+      <div class="login-brand">
+        <img class="login-fias-logo" src="https://fias.org.ec/wp-content/uploads/2021/11/Logo_FIAS_web.png" alt="Fondo de Inversión Ambiental Sostenible (FIAS)" />
+        <div class="login-product"><strong>Inteligencia de Movilizaciones</strong><small>Microsoft 365 · SharePoint · GPS</small></div>
+      </div>
+      <span class="hero-chip"><i class="bi bi-stars"></i> Plataforma 2.0</span>
+      <h1>Movilizaciones institucionales convertidas en evidencia operativa.</h1>
+      <p>Integra registros de SharePoint con rastreo satelital para analizar uso, cobertura, recorridos, kilometraje, tendencias y calidad de la información.</p>
       <button id="btnLogin" class="primary-action"><i class="bi bi-microsoft"></i> Iniciar sesión con Microsoft 365</button>
-      <div class="security-note"><i class="bi bi-shield-check"></i><span>La autenticación y el token se gestionan con MSAL. La aplicación no almacena contraseñas.</span></div>
+      <div class="security-note"><i class="bi bi-shield-check"></i><span>La autenticación se gestiona con Microsoft Entra ID y MSAL. La aplicación no almacena contraseñas.</span></div>
       <div id="loginDiagnostics" class="login-diagnostics"></div>
       <div class="developer-signature login-developer">Desarrollado por: <a href="https://www.linkedin.com/in/jair-cruz-gallegos-65998776/" target="_blank" rel="noopener noreferrer">Jair Cruz <i class="bi bi-linkedin" aria-hidden="true"></i></a></div>
     </div>
@@ -30,9 +37,15 @@
   <div id="app" class="app hidden">
     <header class="masthead">
       <div class="brand-row">
-        <div class="brand-lockup"><a class="fias-logo-shell" href="https://fias.org.ec/" target="_blank" rel="noopener noreferrer" aria-label="Sitio oficial del FIAS"><img class="fias-logo" src="./assets/images/fias-logo.svg" alt="FIAS - Fondo de Inversión Ambiental Sostenible" /></a><div class="product-lockup"><strong>Inteligencia de Movilizaciones</strong><small id="sourceSubtitle">Microsoft 365 · GPS · Analítica territorial</small></div></div>
+        <div class="brand-lockup">
+          <a class="fias-logo-shell" href="https://fias.org.ec/" target="_blank" rel="noopener noreferrer" aria-label="Sitio oficial del FIAS">
+            <img class="fias-logo" src="https://fias.org.ec/wp-content/uploads/2021/11/Logo_FIAS_web.png" alt="FIAS - Fondo de Inversión Ambiental Sostenible" />
+          </a>
+          <div class="product-lockup"><strong>Inteligencia de Movilizaciones</strong><small id="sourceSubtitle">Microsoft 365 · GPS · Analítica territorial</small></div>
+        </div>
         <div class="header-actions">
           <div class="connection-pill" id="connectionPill"><span class="dot"></span><span id="connectionText">Conectando</span></div>
+          <button id="btnTheme" class="header-action" title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro"><i class="bi bi-moon-stars"></i><span>Modo</span></button>
           <button id="btnSync" class="header-action" title="Sincronizar datos" aria-label="Sincronizar datos"><i class="bi bi-arrow-repeat"></i><span>Actualizar</span></button>
           <button id="btnLogout" class="header-action header-action-light" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="bi bi-box-arrow-right"></i><span>Salir</span></button>
         </div>
@@ -44,21 +57,31 @@
         <button class="nav-tab" data-view="fleet"><i class="bi bi-truck-front"></i> Uso y demanda</button>
         <button class="nav-tab" data-view="gps"><i class="bi bi-broadcast-pin"></i> Rastreo GPS</button>
         <button class="nav-tab" data-view="quality"><i class="bi bi-shield-check"></i> Control de datos</button>
+        <button id="navAdmin" class="nav-tab hidden" data-view="admin"><i class="bi bi-database-up"></i> Administración GPS</button>
       </nav>
     </header>
 
     <main class="workspace">
       <section class="command-strip">
-        <div class="command-title"><span class="eyebrow">Centro de análisis</span><h2 id="viewTitle">Panorama operativo</h2><p id="viewSubtitle">Indicadores y patrones relevantes del uso institucional de vehículos.</p></div>
-        <div class="filter-grid">
-          <label class="search-field"><span>Búsqueda global</span><div class="input-wrap"><i class="bi bi-search"></i><input id="fSearch" placeholder="Destino, usuario, grupo, actividad..." /></div></label>
-          <label><span>Desde</span><input id="fFrom" type="date" /></label>
-          <label><span>Hasta</span><input id="fTo" type="date" /></label>
-          <label><span>Grupo / proyecto</span><select id="fGroup"><option value="">Todos</option></select></label>
-          <label><span>Usuario</span><select id="fRequester"><option value="">Todos</option></select></label>
-          <label><span>Vehículo</span><select id="fVehicle"><option value="">Todos</option></select></label>
-          <label><span>Actividad</span><select id="fActivity"><option value="">Todas</option></select></label>
-          <button id="btnResetFilters" class="secondary-action"><i class="bi bi-arrow-counterclockwise"></i> Limpiar</button>
+        <div class="command-bar">
+          <div class="command-title"><span class="eyebrow">Centro de análisis</span><h2 id="viewTitle">Panorama operativo</h2><p id="viewSubtitle">Indicadores y patrones relevantes del uso institucional de vehículos.</p></div>
+          <div id="filterActions" class="command-actions">
+            <button id="btnToggleFilters" class="filter-toggle" type="button" aria-expanded="false" aria-controls="globalFilters"><i class="bi bi-funnel"></i><span>Filtros</span><b id="filterCount" class="filter-count hidden">0</b></button>
+          </div>
+        </div>
+        <div id="filterSummary" class="filter-summary" aria-live="polite"></div>
+        <div id="globalFilters" class="filter-panel collapsed" aria-hidden="true">
+          <div class="filter-panel-head"><div><span class="eyebrow">Refinar resultados</span><strong>Filtros de análisis</strong></div><button id="btnCloseFilters" class="icon-action" type="button" aria-label="Cerrar filtros" title="Cerrar filtros"><i class="bi bi-x-lg"></i></button></div>
+          <div class="filter-grid">
+            <label class="search-field"><span>Búsqueda global</span><div class="input-wrap"><i class="bi bi-search"></i><input id="fSearch" placeholder="Destino, usuario, grupo, vehículo..." /></div></label>
+            <label><span>Desde</span><input id="fFrom" type="date" /></label>
+            <label><span>Hasta</span><input id="fTo" type="date" /></label>
+            <label><span>Grupo / proyecto</span><select id="fGroup"><option value="">Todos</option></select></label>
+            <label><span>Usuario</span><select id="fRequester"><option value="">Todos</option></select></label>
+            <label><span>Vehículo</span><select id="fVehicle"><option value="">Todos</option></select></label>
+            <label><span>Actividad</span><select id="fActivity"><option value="">Todas</option></select></label>
+            <button id="btnResetFilters" class="secondary-action"><i class="bi bi-arrow-counterclockwise"></i> Limpiar filtros</button>
+          </div>
         </div>
       </section>
 
@@ -69,15 +92,22 @@
           <article class="panel span-4"><div class="panel-head"><div><span class="eyebrow">Destinos</span><h3>Puntos más recurrentes</h3></div></div><div id="destinationRanking" class="ranking"></div></article>
           <article class="panel span-7"><div class="panel-head"><div><span class="eyebrow">Lectura automática</span><h3>Lo que muestran los datos</h3></div></div><div id="insightList" class="insights"></div></article>
           <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Finalidad</span><h3>Actividades predominantes</h3></div></div><div class="chart-md"><canvas id="chartActivities"></canvas></div></article>
+          <article class="panel span-12 compare-panel">
+            <div class="panel-head"><div><span class="eyebrow">Comparación</span><h3>Comparar dos períodos</h3></div><div class="legend-note">Movilizaciones · km · horas · GPS</div></div>
+            <div class="compare-controls">
+              <div class="compare-period"><strong>Período A</strong><input id="cmpAFrom" type="date" /><input id="cmpATo" type="date" /></div>
+              <div class="compare-period"><strong>Período B</strong><input id="cmpBFrom" type="date" /><input id="cmpBTo" type="date" /></div>
+              <button id="btnCompare" class="primary-action small"><i class="bi bi-columns-gap"></i> Comparar</button>
+            </div>
+            <div id="comparisonGrid" class="comparison-grid"></div>
+          </article>
         </div>
       </section>
 
       <section id="view-territory" class="view">
         <div class="territory-toolbar">
           <div><span class="eyebrow">Geografía operacional</span><h3>Cobertura, rutas y concentración territorial</h3></div>
-          <div class="segmented" id="mapModes">
-            <button class="active" data-map="coverage">Cobertura</button><button data-map="routes">Rutas GPS</button><button data-map="heat">Calor GPS</button><button data-map="allgps">Histórico GPS</button>
-          </div>
+          <div class="segmented" id="mapModes"><button class="active" data-map="coverage">Cobertura</button><button data-map="routes">Rutas GPS</button><button data-map="heat">Calor GPS</button><button data-map="allgps">Histórico GPS</button></div>
         </div>
         <div class="territory-grid">
           <article class="map-panel"><div id="mainMap"></div><div id="mapCaption" class="map-caption">Origen fijo: Matriz FIAS, Quito.</div></article>
@@ -89,11 +119,12 @@
       </section>
 
       <section id="view-operations" class="view">
-        <div class="section-head"><div><span class="eyebrow">Explorador operacional</span><h3>Movilizaciones relacionadas con evidencia GPS</h3></div><button id="btnExport" class="secondary-action"><i class="bi bi-download"></i> Exportar CSV</button></div>
-        <div class="table-panel"><div class="table-scroll"><table><thead><tr><th>Inicio</th><th>Usuario</th><th>Grupo</th><th>Destino / finalidad</th><th>Km SP</th><th>GPS</th><th>Km GPS</th><th>Cobertura</th><th>Control</th></tr></thead><tbody id="movementRows"></tbody></table></div></div>
+        <div class="section-head"><div><span class="eyebrow">Explorador operacional</span><h3>Movilizaciones relacionadas con evidencia GPS</h3></div><div class="export-actions"><button id="btnExportCsv" class="secondary-action"><i class="bi bi-filetype-csv"></i> CSV</button><button id="btnExportXlsx" class="secondary-action"><i class="bi bi-file-earmark-excel"></i> Excel</button><button id="btnExportPdf" class="secondary-action"><i class="bi bi-file-earmark-pdf"></i> PDF</button></div></div>
+        <div class="table-panel"><div class="table-scroll"><table class="movement-table"><thead><tr><th>Inicio</th><th>Usuario</th><th>Grupo</th><th>Destino / finalidad</th><th>Km SP</th><th>GPS</th><th>Km GPS</th><th>Cobertura</th><th>Control</th></tr></thead><tbody id="movementRows"></tbody></table></div></div>
       </section>
 
       <section id="view-fleet" class="view">
+        <div id="fleetKpis" class="kpi-grid fleet-kpis"></div>
         <div class="layout-grid">
           <article class="panel span-6"><div class="panel-head"><div><span class="eyebrow">Demanda institucional</span><h3>Movilizaciones por grupo / proyecto</h3></div></div><div class="chart-lg"><canvas id="chartGroups"></canvas></div></article>
           <article class="panel span-6"><div class="panel-head"><div><span class="eyebrow">Usuarios</span><h3>Solicitantes con mayor utilización</h3></div></div><div class="chart-lg"><canvas id="chartRequesters"></canvas></div></article>
@@ -114,27 +145,44 @@
       <section id="view-quality" class="view">
         <div class="layout-grid">
           <article class="panel span-7"><div class="panel-head"><div><span class="eyebrow">Completitud</span><h3>Cobertura de campos para análisis</h3></div></div><div id="qualityGrid" class="quality-grid"></div></article>
-          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Fuente SharePoint</span><h3>Conexión y lista activa</h3></div><button id="btnOpenSource" class="text-action">Configurar</button></div><div id="sourceDiagnostics" class="diagnostics"></div></article>
+          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Fuentes</span><h3>Conexión y estado de datos</h3></div><button id="btnOpenSource" class="text-action">Configurar</button></div><div id="sourceDiagnostics" class="diagnostics"></div></article>
           <article class="panel span-12"><div class="panel-head"><div><span class="eyebrow">Excepciones</span><h3>Registros que requieren revisión</h3></div></div><div class="table-scroll"><table><thead><tr><th>Fecha</th><th>Destino</th><th>Usuario</th><th>Observación automática</th></tr></thead><tbody id="anomalyRows"></tbody></table></div></article>
         </div>
       </section>
+
+      <section id="view-admin" class="view">
+        <div class="admin-banner"><div><span class="eyebrow">Administración restringida</span><h3>Ingreso automático de reportes GPS</h3><p>Los PDF se depositan en SharePoint. GitHub Actions los valida, transforma e integra en JSON protegidos dentro de SharePoint, sin exponer coordenadas en GitHub Pages ni requerir reprocesamiento manual.</p></div><span id="adminIdentity" class="admin-identity"></span></div>
+        <div class="layout-grid">
+          <article class="panel span-7">
+            <div class="panel-head"><div><span class="eyebrow">Nueva carga</span><h3>Reporte InformeRecorridoPlus</h3></div><span class="pill ok">Solo administrador</span></div>
+            <label id="gpsDropzone" class="dropzone" for="gpsPdfInput">
+              <input id="gpsPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
+              <i class="bi bi-file-earmark-arrow-up"></i><strong>Seleccione o arrastre uno o varios PDF</strong><span>Se valida formato y tamaño antes de enviar a SharePoint.</span>
+            </label>
+            <div id="selectedGpsFiles" class="selected-files"></div>
+            <div class="upload-toolbar"><button id="btnUploadGps" class="primary-action"><i class="bi bi-cloud-arrow-up"></i> Cargar a SharePoint</button><button id="btnRefreshAdmin" class="secondary-action"><i class="bi bi-arrow-clockwise"></i> Actualizar estado</button></div>
+            <div id="uploadProgress" class="upload-progress hidden"><div class="progress"><div id="uploadProgressBar" style="width:0%"></div></div><span id="uploadProgressText">Preparando…</span></div>
+            <div class="pipeline-note"><i class="bi bi-github"></i><div><strong>Procesamiento automático</strong><span>El flujo de GitHub Actions revisa la bandeja aproximadamente cada 5 minutos y publica los JSON protegidos en SharePoint. GitHub puede introducir una demora adicional en ejecuciones programadas.</span></div></div>
+          </article>
+          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Bandeja</span><h3>PDF pendientes en SharePoint</h3></div></div><div id="pendingGpsFiles" class="source-list"></div></article>
+          <article class="panel span-12"><div class="panel-head"><div><span class="eyebrow">Auditoría</span><h3>Historial de cargas y procesamiento</h3></div></div><div class="table-scroll"><table class="history-table"><thead><tr><th>Fecha</th><th>Archivo</th><th>Usuario</th><th>Rastreador / período</th><th>Puntos</th><th>Estado</th><th>Detalle</th></tr></thead><tbody id="gpsHistoryRows"></tbody></table></div></article>
+        </div>
+      </section>
     </main>
-    <footer class="app-footer">
-      <div class="footer-inner">
-        <div class="footer-product"><img src="./assets/images/fias-logo.svg" alt="FIAS" /><span>Inteligencia de Movilizaciones · Plataforma administrativa</span></div>
-        <div class="developer-signature">Desarrollado por: <a href="https://www.linkedin.com/in/jair-cruz-gallegos-65998776/" target="_blank" rel="noopener noreferrer">Jair Cruz <i class="bi bi-linkedin" aria-hidden="true"></i></a></div>
-      </div>
-    </footer>
+
+    <footer class="app-footer"><div class="footer-inner"><div class="footer-product"><img src="https://fias.org.ec/wp-content/uploads/2021/11/Logo_FIAS_web.png" alt="FIAS" /><span>Inteligencia de Movilizaciones · Plataforma administrativa</span></div><div class="developer-signature">Desarrollado por: <a href="https://www.linkedin.com/in/jair-cruz-gallegos-65998776/" target="_blank" rel="noopener noreferrer">Jair Cruz <i class="bi bi-linkedin" aria-hidden="true"></i></a></div></div></footer>
   </div>
 
   <div id="detailDrawer" class="drawer" aria-hidden="true"><div class="drawer-card"><div class="drawer-head"><div><span class="eyebrow">Movilización</span><h3 id="detailTitle">Detalle</h3></div><button id="btnCloseDrawer" class="icon-action"><i class="bi bi-x-lg"></i></button></div><div id="detailBody" class="drawer-body"></div></div></div>
-
   <div id="sourceModal" class="modal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">Configuración</span><h3>Fuente SharePoint y mapeo de campos</h3></div><button id="btnCloseSource" class="icon-action"><i class="bi bi-x-lg"></i></button></div><div class="modal-body"><div id="listChooser" class="source-list"></div><div class="divider"></div><div id="mappingEditor" class="mapping-grid"></div><button id="btnApplyMapping" class="primary-action small">Aplicar mapeo y reprocesar</button></div></div></div>
 
   <script src="https://alcdn.msauth.net/browser/2.32.0/js/msal-browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <script type="module" src="./js/app.js?v=1.5.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+  <script type="module" src="./js/app.js?v=2.1.0"></script>
 </body>
 </html>

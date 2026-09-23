@@ -1,0 +1,47 @@
+name: Sincronizar GPS desde SharePoint
+
+on:
+  schedule:
+    # ~cada 5 minutos, desplazado del minuto 0 para reducir congestión del scheduler.
+    - cron: '2-59/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: fias-gps-sharepoint-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar Poppler
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Procesar bandeja SharePoint
+        env:
+          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+          MS_ACTION_CLIENT_ID: ${{ secrets.MS_ACTION_CLIENT_ID }}
+          MS_ACTION_CLIENT_SECRET: ${{ secrets.MS_ACTION_CLIENT_SECRET }}
+          SP_HOST: fiasec.sharepoint.com
+          SP_SITE_PATH: /sites/FONDODEINVERSIONAMBIENTALSOSTENIBLE
+          SP_GPS_INBOX: Movilizaciones-FIAS/GPS/Entrada
+          SP_GPS_PROCESSED: Movilizaciones-FIAS/GPS/Procesados
+          SP_GPS_REJECTED: Movilizaciones-FIAS/GPS/Rechazados
+          SP_GPS_PUBLISHED: Movilizaciones-FIAS/GPS/Publicados
+        run: |
+          set +e
+          python scripts/sync_sharepoint_gps.py
+          code=$?
+          # Un PDF rechazado queda auditado y no debe bloquear el resto de la cola.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then exit "$code"; fi

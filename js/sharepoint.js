@@ -1,6 +1,6 @@
-import { SHAREPOINT_CONFIG } from '../config/msal-config.js?v=1.5.0';
-import { graph, graphPaged } from './graph.js?v=1.5.0';
-import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=1.5.0';
+import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.0';
+import { graph, graphPaged } from './graph.js?v=2.1.0';
+import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.1.0';
 
 const SEMANTICS={
   start:{label:'Fecha inicio uso',aliases:['fecha inicia uso','fecha inicio uso','fechainiciauso','fechainiciouso','fecha inicio','inicio uso','fecha salida','fecha movilizacion','fecha viaje']},
@@ -20,7 +20,7 @@ const SEMANTICS={
   status:{label:'Estado',aliases:['estado','status','estado movilizacion']}
 };
 
-const state={site:null,lists:[],activeList:null,columns:[],items:[],mapping:{},userMap:new Map(),userInfoList:null,lookupMaps:new Map()};
+const state={site:null,gpsSite:null,lists:[],activeList:null,columns:[],items:[],mapping:{},userMap:new Map(),userInfoList:null,lookupMaps:new Map()};
 export const sharepointState=state;
 
 export async function resolveSite(){
@@ -28,6 +28,14 @@ export async function resolveSite(){
   const path=SHAREPOINT_CONFIG.sitePath.replace(/^\//,'');
   state.site=await graph(`/sites/${SHAREPOINT_CONFIG.host}:/${path}?$select=id,displayName,webUrl`);
   return state.site;
+}
+
+export async function resolveGpsSite(){
+  if(state.gpsSite) return state.gpsSite;
+  const host=SHAREPOINT_GPS_CONFIG.host || SHAREPOINT_CONFIG.host;
+  const path=(SHAREPOINT_GPS_CONFIG.sitePath || SHAREPOINT_CONFIG.sitePath).replace(/^\//,'');
+  state.gpsSite=await graph(`/sites/${host}:/${path}?$select=id,displayName,webUrl`);
+  return state.gpsSite;
 }
 
 function semanticScore(columns,title=''){

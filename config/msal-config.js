@@ -1,11 +1,17 @@
 export const AUTH_CONFIG = {
   tenantId: '5e23e4af-237d-4d97-bf6e-dca808015787',
   clientId: 'c8a828c1-3a20-4876-96af-b4f30ce4abeb',
-  scopes: ['User.Read','Files.ReadWrite.All','Sites.ReadWrite.All'],
-  // null = usar exactamente la URL de la página publicada, igual al HTML de referencia.
-  // En Microsoft Entra ID debe registrarse esa misma URL como SPA Redirect URI.
+  // Permisos solicitados a todos los usuarios: solo lectura de SharePoint.
+  scopes: ['User.Read','Sites.Read.All'],
+  // Se solicita de forma incremental únicamente al administrador al cargar PDF.
+  adminScopes: ['User.Read','Sites.Read.All','Files.ReadWrite'],
+  // null = usar exactamente la URL publicada. Debe registrarse como SPA Redirect URI en Entra ID.
   redirectUri: null,
   cacheLocation: 'sessionStorage'
+};
+
+export const ACCESS_CONFIG = {
+  gpsAdministrators: ['jcruzg@fias.org.ec']
 };
 
 export const SHAREPOINT_CONFIG = {
@@ -13,8 +19,6 @@ export const SHAREPOINT_CONFIG = {
   sitePath: '/sites/RecursosAdministrativo',
   listShareUrl: 'https://fiasec.sharepoint.com/:l:/s/RecursosAdministrativo/JABGnrxRvgAqSaT9aEcQZvFfAbrh1fNSrNx-i-ixKrm_kZw?e=Ryl4oq',
   preferredListId: '',
-  // Firma esperada de la lista de movilizaciones. Se usa para localizarla automáticamente
-  // dentro del sitio RecursosAdministrativo aunque el enlace compartido no exponga el GUID.
   expectedColumns: [
     'FECHA INICIA USO','FECHA TERMINA','Usuario1','GRUPO','FECHA SOLICITUD',
     'DESTINO','KM INICIAL','KM FINAL','RECORRIDO'
@@ -23,16 +27,31 @@ export const SHAREPOINT_CONFIG = {
   maxItems: 15000
 };
 
+// Carpetas relativas a la biblioteca de documentos predeterminada del sitio SharePoint.
+// La carpeta Entrada debe tener permisos de escritura únicamente para el administrador autorizado.
+export const SHAREPOINT_GPS_CONFIG = {
+  // Sitio real donde se almacena la carpeta Movilizaciones-FIAS/GPS.
+  host: 'fiasec.sharepoint.com',
+  sitePath: '/sites/FONDODEINVERSIONAMBIENTALSOSTENIBLE',
+  inboxFolder: 'Movilizaciones-FIAS/GPS/Entrada',
+  processedFolder: 'Movilizaciones-FIAS/GPS/Procesados',
+  rejectedFolder: 'Movilizaciones-FIAS/GPS/Rechazados',
+  // JSON protegidos consumidos por el dashboard autenticado. Nunca se publican en GitHub Pages.
+  publishedFolder: 'Movilizaciones-FIAS/GPS/Publicados',
+  manifestName: 'manifest.json',
+  historyName: 'history.json',
+  maxUploadMb: 200,
+  acceptedMimeTypes: ['application/pdf'],
+  actionIntervalMinutes: 5
+};
+
 export const GPS_CONFIG = {
-  manifestUrl: './data/gps/manifest.json',
   origin: {
     name: 'Matriz FIAS · Quito',
     lat: -0.20465,
     lon: -78.48410,
     note: 'Punto institucional de referencia para análisis de salida y cobertura.'
   },
-  // Si SharePoint contiene un campo Vehículo/Placa, agregue aquí aliases que
-  // correspondan al rastreador PDF-8770. Si el campo no existe, se correlaciona por tiempo.
   trackerAliases: {
     'PDF-8770': ['PDF-8770']
   },
@@ -43,5 +62,6 @@ export const APP_CONFIG = {
   name: 'FIAS · Inteligencia de Movilizaciones',
   timezone: 'America/Guayaquil',
   locale: 'es-EC',
-  version: '1.5.0'
+  version: '2.1.0',
+  logoUrl: 'https://fias.org.ec/wp-content/uploads/2021/11/Logo_FIAS_web.png'
 };

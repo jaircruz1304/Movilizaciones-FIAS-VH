@@ -1,4 +1,4 @@
-import { groupCounts, sum, average, iqrOutlierThreshold, formatDateKey } from './utils.js?v=1.5.0';
+import { groupCounts, sum, average, iqrOutlierThreshold, formatDateKey } from './utils.js?v=2.1.0';
 
 export function filterMovements(rows,filters={}){
   const q=(filters.search||'').trim().toLowerCase();
@@ -10,7 +10,7 @@ export function filterMovements(rows,filters={}){
     if(filters.vehicle && (r.vehicle||r.plate)!==filters.vehicle)return false;
     if(filters.activity && r.activityCategory!==filters.activity)return false;
     if(q){
-      const hay=[r.requester,r.group,r.destination,r.destinationLabel,r.vehicle,r.plate,r.driver,r.activity,r.activityCategory,r.project,r.gps?.remote?.place,r.gps?.provinces?.join(' ')].join(' ').toLowerCase();
+      const hay=[r.requester,r.group,r.destination,r.destinationLabel,r.vehicle,r.plate,r.activity,r.activityCategory,r.project,r.gps?.remote?.place,r.gps?.provinces?.join(' ')].join(' ').toLowerCase();
       if(!hay.includes(q))return false;
     }
     return true;
@@ -30,6 +30,7 @@ export function kpis(rows){
     sharepointKm:spKm,
     gpsKm,
     gpsMatchRate:rows.length?matched.length/rows.length*100:0,
+    totalUseHours:sum(durations,r=>r.durationHours),
     avgDuration:average(durations,r=>r.durationHours),
     avgLeadHours:average(leads,r=>r.leadHours),
     topDestination:destinations[0]?.[0]||'—',
@@ -85,7 +86,7 @@ export function dataQuality(rows){
   const total=rows.length||1;
   const fields=[
     ['Fecha inicio',r=>!!r.start],['Fecha fin',r=>!!r.end],['Solicitante',r=>!!r.requester],['Grupo/proyecto',r=>!!r.group||!!r.project],
-    ['Destino',r=>!!r.destination],['Kilometraje',r=>r.distance>0],['Vehículo/placa',r=>!!r.vehicle||!!r.plate],['Conductor',r=>!!r.driver],['GPS relacionado',r=>!!r.gps]
+    ['Destino',r=>!!r.destination],['Kilometraje',r=>r.distance>0],['Vehículo/placa',r=>!!r.vehicle||!!r.plate],['GPS relacionado',r=>!!r.gps]
   ];
   return fields.map(([label,test])=>{const n=rows.filter(test).length;return{label,count:n,pct:n/total*100}});
 }

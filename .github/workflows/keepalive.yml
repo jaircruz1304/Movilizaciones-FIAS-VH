@@ -1,0 +1,35 @@
+name: Mantener workflows programados activos
+
+on:
+  schedule:
+    # Repositorios públicos: evita superar 60 días sin actividad.
+    - cron: '17 3 15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Registrar heartbeat no sensible
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ops
+          printf 'Último heartbeat UTC: %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > ops/actions-keepalive.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ops/actions-keepalive.txt
+          if git diff --cached --quiet; then
+            echo 'Sin cambios.'
+            exit 0
+          fi
+          git commit -m 'chore: mantener activos los workflows programados'
+          git push

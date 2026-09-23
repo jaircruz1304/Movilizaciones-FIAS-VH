@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+_site/
+.DS_Store
+Thumbs.db
+# Los datos GPS productivos contienen coordenadas y no deben versionarse.
+data/gps/*.json

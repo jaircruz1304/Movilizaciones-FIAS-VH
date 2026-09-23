@@ -1,8 +1,13 @@
-import { AUTH_CONFIG } from '../config/msal-config.js?v=1.5.0';
+import { AUTH_CONFIG, ACCESS_CONFIG } from '../config/msal-config.js?v=2.1.0';
 
 let msalApp=null;
 let account=null;
-let token=null;
+const tokenCache=new Map();
+
+function normalizeScopes(scopes){
+  return [...new Set((scopes?.length?scopes:AUTH_CONFIG.scopes).map(String))].sort();
+}
+function cacheKey(scopes){return normalizeScopes(scopes).join(' ');}
 
 export function getRedirectUri(){
   return AUTH_CONFIG.redirectUri || (window.location.origin + window.location.pathname);
@@ -23,32 +28,56 @@ export async function initAuth(){
   });
   if(typeof msalApp.initialize==='function') await msalApp.initialize();
   const accounts=msalApp.getAllAccounts();
-  if(accounts.length){ account=accounts[0]; try{await acquireToken();}catch(err){console.warn('Sesión encontrada, token pendiente de interacción.',err);} }
+  if(accounts.length){
+    account=accounts[0];
+    try{await acquireToken(AUTH_CONFIG.scopes);}
+    catch(err){console.warn('Sesión encontrada, token pendiente de interacción.',err);}
+  }
   return account;
 }
 
 export function getAccount(){ return account || (msalApp && msalApp.getAllAccounts()[0]) || null; }
 export function isAuthenticated(){ return !!getAccount(); }
 
+export function getAuthenticatedEmail(){
+  const a=getAccount();
+  const c=a?.idTokenClaims||{};
+  const candidates=[a?.username,c.preferred_username,c.email,c.upn,c.unique_name];
+  const email=candidates.find(v=>typeof v==='string'&&v.includes('@'))||'';
+  return email.trim().toLowerCase();
+}
+
+export function isGpsAdministrator(){
+  const email=getAuthenticatedEmail();
+  return !!email && (ACCESS_CONFIG.gpsAdministrators||[]).some(x=>String(x).trim().toLowerCase()===email);
+}
+
 export async function login(){
   if(!msalApp) await initAuth();
-  const result=await msalApp.loginPopup({scopes:AUTH_CONFIG.scopes});
+  const scopes=normalizeScopes(AUTH_CONFIG.scopes);
+  const result=await msalApp.loginPopup({scopes});
   account=result.account;
-  token=result.accessToken || null;
+  if(result.accessToken) tokenCache.set(cacheKey(scopes),result.accessToken);
   return account;
 }
 
-export async function acquireToken(){
+// Permite consentimiento incremental: lectura para usuarios normales y escritura solo al administrador.
+export async function acquireToken(scopes=AUTH_CONFIG.scopes){
   if(!msalApp) await initAuth();
   const active=getAccount();
   if(!active) throw new Error('No existe una cuenta Microsoft autenticada.');
+  const normalized=normalizeScopes(scopes);
   try{
-    const result=await msalApp.acquireTokenSilent({scopes:AUTH_CONFIG.scopes,account:active});
-    account=result.account||active; token=result.accessToken; return token;
+    const result=await msalApp.acquireTokenSilent({scopes:normalized,account:active});
+    account=result.account||active;
+    if(result.accessToken) tokenCache.set(cacheKey(normalized),result.accessToken);
+    return result.accessToken;
   }catch(err){
     if(window.msal && err instanceof msal.InteractionRequiredAuthError){
-      const result=await msalApp.acquireTokenPopup({scopes:AUTH_CONFIG.scopes,account:active});
-      account=result.account||active; token=result.accessToken; return token;
+      const result=await msalApp.acquireTokenPopup({scopes:normalized,account:active});
+      account=result.account||active;
+      if(result.accessToken) tokenCache.set(cacheKey(normalized),result.accessToken);
+      return result.accessToken;
     }
     throw err;
   }
@@ -56,7 +85,7 @@ export async function acquireToken(){
 
 export async function logout(){
   const active=getAccount();
-  token=null; account=null;
+  tokenCache.clear(); account=null;
   if(msalApp && active){
     await msalApp.logoutPopup({
       account:active,
@@ -71,7 +100,9 @@ export function authDiagnostics(){
     tenantId:AUTH_CONFIG.tenantId,
     clientId:AUTH_CONFIG.clientId,
     scopes:[...AUTH_CONFIG.scopes],
+    adminScopes:[...(AUTH_CONFIG.adminScopes||[])],
     redirectUri:getRedirectUri(),
-    account:getAccount()?.username||''
+    account:getAuthenticatedEmail(),
+    isGpsAdministrator:isGpsAdministrator()
   };
 }

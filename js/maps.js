@@ -1,6 +1,6 @@
-import { GPS_CONFIG } from '../config/msal-config.js?v=1.5.0';
-import { downsample } from './gps.js?v=1.5.0';
-import { escapeHtml, haversineKm } from './utils.js?v=1.5.0';
+import { GPS_CONFIG } from '../config/msal-config.js?v=2.1.0';
+import { downsample } from './gps.js?v=2.1.0';
+import { escapeHtml, haversineKm } from './utils.js?v=2.1.0';
 
 let map=null;
 let layers=[];

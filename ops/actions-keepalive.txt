@@ -1,0 +1,1 @@
+Archivo de control no sensible. GitHub Actions actualizará aquí únicamente la fecha del heartbeat mensual.

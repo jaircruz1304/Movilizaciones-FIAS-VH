@@ -1,8 +1,60 @@
-import { GPS_CONFIG } from '../config/msal-config.js?v=1.5.0';
-import { haversineKm, normalizeText, percentile } from './utils.js?v=1.5.0';
+import { GPS_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.0';
+import { haversineKm, normalizeText, percentile } from './utils.js?v=2.1.0';
+import { graph } from './graph.js?v=2.1.0';
+import { resolveGpsSite } from './sharepoint.js?v=2.1.0';
 
-const gpsState={manifest:null,points:[],trackers:new Map(),loaded:false};
+const gpsState={manifest:null,points:[],trackers:new Map(),loaded:false,source:'SharePoint protegido'};
 export { gpsState };
+
+let gpsDrive=null;
+function encodePath(path=''){return String(path).split('/').filter(Boolean).map(encodeURIComponent).join('/');}
+async function getGpsReadDrive(){
+  if(gpsDrive) return gpsDrive;
+
+  const site = await resolveGpsSite();
+
+  const data = await graph(
+    `/sites/${encodeURIComponent(site.id)}/drives?$select=id,name,webUrl,driveType`
+  );
+
+  const drives = data?.value || [];
+
+  if (!drives.length) {
+    throw new Error(
+      'No se encontraron bibliotecas de documentos accesibles para los datos GPS.'
+    );
+  }
+
+  gpsDrive =
+    drives.find(d => {
+      const url = decodeURIComponent(String(d.webUrl || '')).toLowerCase();
+      return url.includes('/documentos compartidos');
+    }) ||
+    drives.find(d =>
+      ['documentos compartidos','documentos','documents','shared documents']
+        .includes(String(d.name || '').trim().toLowerCase())
+    ) ||
+    drives[0];
+
+  console.info('Biblioteca GPS de lectura:', {
+    id: gpsDrive.id,
+    name: gpsDrive.name,
+    webUrl: gpsDrive.webUrl
+  });
+
+  return gpsDrive;
+}
+async function loadProtectedJson(filename){
+  const drive=await getGpsReadDrive();
+  const path=`${SHAREPOINT_GPS_CONFIG.publishedFolder}/${filename}`;
+  try{
+    const data=await graph(`/drives/${encodeURIComponent(drive.id)}/root:/${encodePath(path)}:/content`);
+    return typeof data==='string'?JSON.parse(data):data;
+  }catch(err){
+    if(String(err?.message||err).includes('Microsoft Graph 404'))return null;
+    throw err;
+  }
+}
 
 function decodePoint(row,eventCodes){
   return {
@@ -16,13 +68,22 @@ function decodePoint(row,eventCodes){
   };
 }
 
-export async function loadGpsData(){
-  if(gpsState.loaded) return gpsState;
-  const manifest=await fetch(GPS_CONFIG.manifestUrl).then(r=>{if(!r.ok)throw new Error(`No se pudo cargar ${GPS_CONFIG.manifestUrl}`);return r.json();});
+export async function loadGpsData(force=false){
+  if(gpsState.loaded && !force) return gpsState;
+  if(force){gpsState.manifest=null;gpsState.points=[];gpsState.trackers=new Map();gpsState.loaded=false;}
+  const manifest=await loadProtectedJson(SHAREPOINT_GPS_CONFIG.manifestName);
+  if(!manifest){
+    gpsState.manifest={version:2,files:[],eventCodes:{},totalPoints:0,updatedAt:null};
+    gpsState.points=[];gpsState.trackers=new Map();gpsState.loaded=true;
+    return gpsState;
+  }
   gpsState.manifest=manifest;
   const all=[];
   for(const item of manifest.files||[]){
-    const data=await fetch(item.url).then(r=>{if(!r.ok)throw new Error(`No se pudo cargar ${item.url}`);return r.json();});
+    const filename=item.file || String(item.url||'').split('/').pop();
+    if(!filename)continue;
+    const data=await loadProtectedJson(filename);
+    if(!data)continue;
     const pts=(data.points||[]).map(row=>({...decodePoint(row,manifest.eventCodes||{}),tracker:data.tracker||item.tracker,month:item.month||''}));
     all.push(...pts);
     if(!gpsState.trackers.has(item.tracker))gpsState.trackers.set(item.tracker,[]);

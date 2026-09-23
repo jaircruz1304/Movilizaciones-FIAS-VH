@@ -1,152 +1,169 @@
-# FIAS · Inteligencia de Movilizaciones
+# FIAS · Inteligencia de Movilizaciones 2.0
 
-Sistema web estático y modular para combinar la **lista institucional de movilizaciones en SharePoint** con los **reportes de rastreo satelital InformeRecorridoPlus**.
+Plataforma para integrar **movilizaciones institucionales de SharePoint** con reportes satelitales **InformeRecorridoPlus**, operando exclusivamente con **GitHub Pages + GitHub Actions + Microsoft 365/SharePoint**, sin servidor propio.
 
-## Qué hace
-
-- Autenticación Microsoft 365 mediante **MSAL**.
-- Lectura en tiempo real de la lista de SharePoint mediante Microsoft Graph.
-- Descubrimiento de listas y mapeo semántico de columnas.
-- Procesamiento de fechas, solicitantes, grupos/proyectos, destinos y kilometrajes.
-- Integración de rastreo GPS por fecha/hora.
-- Trazas GPS reales, mapas de calor y cobertura territorial.
-- Conciliación `RECORRIDO SharePoint` vs. odómetro GPS de referencia.
-- Rankings de destinos, actividades, grupos/proyectos y usuarios.
-- Detección de excepciones: kilometrajes, fechas, solicitudes, recorridos atípicos y diferencias GPS.
-- Exportación de la vista filtrada a CSV.
-
-## Arquitectura
+## Arquitectura 2.0
 
 ```text
-fias-movilizaciones/
-├── index.html
-├── css/
-│   └── styles.css
-├── config/
-│   └── msal-config.js
+Usuario autorizado
+      │
+      ▼
+GitHub Pages (SPA estática)
+      │ MSAL + Microsoft Graph
+      ├──────────────► Lista SharePoint de movilizaciones
+      │
+Administrador GPS: jcruzg@fias.org.ec
+      │ carga PDF
+      ▼
+SharePoint / Movilizaciones-FIAS/GPS/Entrada
+      │
+      │ GitHub Actions ~cada 5 min
+      ▼
+Python + Poppler
+  extraer → validar → deduplicar → integrar
+      │
+      ▼
+SharePoint / Movilizaciones-FIAS/GPS/Publicados
+  manifest.json
+  pdf-8770-YYYY-MM.json
+  history.json
+      │
+      ▼
+Dashboard autenticado lee los JSON mediante Microsoft Graph
+```
+
+### Decisión de seguridad importante
+
+Los JSON GPS contienen coordenadas, horas, calles, eventos y kilometraje. Desde la versión 2.0 **no se publican dentro de GitHub Pages ni se versionan en GitHub**. El navegador autenticado los obtiene desde SharePoint mediante Microsoft Graph.
+
+Esto es especialmente importante si el repositorio de GitHub es público: ocultar el dashboard detrás de un botón de login no protege archivos estáticos que hayan sido publicados como parte del sitio.
+
+## Funcionalidades incorporadas
+
+### Carga y procesamiento automático de GPS
+
+- Carga de uno o varios PDF `InformeRecorridoPlus` desde la interfaz.
+- Validación de tipo y tamaño antes de enviar.
+- Almacenamiento inicial en SharePoint `GPS/Entrada`.
+- Procesamiento automático en GitHub Actions con `pdftotext -layout` de Poppler.
+- Extracción de fecha/hora, ubicación, evento, latitud, longitud, velocidad y kilometraje.
+- Validación de estructura y coordenadas.
+- Hash SHA-256 por PDF.
+- Deduplicación por archivo y por punto GPS.
+- Integración incremental por mes.
+- Regeneración automática de `manifest.json`.
+- Traslado del PDF a `Procesados` o `Rechazados`.
+- Historial de auditoría protegido en SharePoint.
+
+### Control de acceso
+
+- Usuario administrador GPS: `jcruzg@fias.org.ec`.
+- Usuarios normales: consulta, filtros, mapas, análisis y exportación.
+- Usuarios normales solicitan a Microsoft Graph permisos de **lectura**.
+- El permiso delegado `Files.ReadWrite` se solicita de forma incremental solo al administrador cuando usa la carga GPS; los demás usuarios permanecen con permisos de lectura.
+- La carpeta `GPS/Entrada` debe tener permisos SharePoint de escritura únicamente para el administrador autorizado.
+- GitHub Actions usa una App Registration separada con credenciales almacenadas solo en GitHub Secrets y se recomienda `Sites.Selected` con acceso `write` únicamente al sitio requerido.
+
+### Reingeniería de interfaz
+
+- Diseño responsive para escritorio, tablet y móvil.
+- Modo claro/oscuro persistente.
+- Logo oficial FIAS.
+- Indicadores ejecutivos.
+- Gráficos interactivos.
+- Mapas de cobertura, rutas GPS, calor e histórico.
+- Filtros bajo demanda por fecha, grupo/proyecto, usuario, vehículo y actividad.
+- Comparación de períodos.
+- Indicadores de kilometraje y horas de uso.
+- Conteo de vehículos activos y métricas de utilización.
+- Exportación CSV, Excel y PDF.
+- Panel exclusivo de Administración GPS con cola e historial.
+
+## Validación con los siete reportes suministrados
+
+El parser 2.0 fue ejecutado de nuevo sobre los PDF de enero a julio de 2026:
+
+| Mes | Puntos extraídos |
+|---|---:|
+| Enero | 2.601 |
+| Febrero | 1.142 |
+| Marzo | 3.998 |
+| Abril | 9.384 |
+| Mayo | 7.361 |
+| Junio | 3.089 |
+| Julio | 8.404 |
+| **Total** | **35.979** |
+
+Los siete archivos fueron procesados sin pérdida de registros respecto de la base histórica que contenía la versión anterior.
+
+## Carpetas SharePoint
+
+```text
+Movilizaciones-FIAS/
+└── GPS/
+    ├── Entrada/
+    ├── Procesados/
+    ├── Rechazados/
+    └── Publicados/
+        ├── manifest.json
+        ├── history.json
+        └── pdf-8770-YYYY-MM.json
+```
+
+`Publicados` debe ser legible por los usuarios autorizados del dashboard, pero no necesita permisos de escritura para ellos. La App de GitHub Actions sí necesita escritura en el sitio.
+
+## Estructura del repositorio
+
+```text
+.
+├── .github/workflows/
+│   ├── pages.yml
+│   ├── sync-gps.yml
+│   └── keepalive.yml
+├── config/msal-config.js
+├── css/styles.css
 ├── js/
+│   ├── admin.js
+│   ├── analytics.js
 │   ├── app.js
 │   ├── auth.js
-│   ├── graph.js
-│   ├── sharepoint.js
-│   ├── gps.js
-│   ├── analytics.js
-│   ├── maps.js
 │   ├── dashboard.js
+│   ├── gps.js
+│   ├── graph.js
+│   ├── maps.js
+│   ├── sharepoint.js
 │   └── utils.js
-├── assets/
-│   └── images/
-│       └── fias-logo.svg
-├── data/
-│   └── gps/
-│       ├── manifest.json
-│       ├── pdf-8770-2026-01.json
-│       ├── ...
-│       └── pdf-8770-2026-07.json
 ├── scripts/
-│   └── extract_gps.py
-├── README.md
+│   ├── extract_gps.py
+│   ├── sync_sharepoint_gps.py
+│   └── validate_gps_data.py
+├── data/gps/README.md
+├── index.html
 └── DEPLOY.md
 ```
 
-## Fuentes actuales
+Los datos GPS productivos no forman parte del sitio estático. En repositorios públicos, `keepalive.yml` mantiene actividad mensual no sensible para evitar la desactivación automática de los workflows programados por inactividad.
 
-### SharePoint
+## Prueba local del parser
 
-El sitio configurado es:
-
-- Host: `fiasec.sharepoint.com`
-- Sitio: `/sites/RecursosAdministrativo`
-- La lista se descubre automáticamente por sus columnas; el usuario puede cambiarla desde **Control de datos → Configurar**.
-
-### GPS
-
-Se incorporaron los reportes del rastreador `PDF-8770` de **enero a julio de 2026**. Los PDF se convirtieron a JSON por mes para evitar cargar y reprocesar miles de páginas en cada visita al dashboard.
-
-Datos extraídos por posición:
-
-`fecha/hora · calle/ubicación · evento · latitud · longitud · velocidad · kilometraje`
-
-Total actual: **35.979 puntos GPS**.
-
-## Autenticación
-
-`config/msal-config.js` conserva el patrón MSAL del HTML institucional de referencia:
-
-- tenant institucional;
-- client ID institucional;
-- `loginPopup`;
-- `acquireTokenSilent` con fallback a `acquireTokenPopup`;
-- `sessionStorage`;
-- redirect URI = URL actual de la aplicación, salvo que se configure una URI fija.
-
-> La URL publicada debe registrarse exactamente en Microsoft Entra ID como **Single-page application (SPA) Redirect URI**.
-
-## Ejecutar en local
-
-Los módulos ES y los JSON deben servirse por HTTP, no abrirse con doble clic como `file://`.
+Requiere Poppler (`pdftotext`).
 
 ```bash
-cd fias-movilizaciones
-python -m http.server 8080
+mkdir -p /tmp/fias-gps-test
+python scripts/extract_gps.py "InformeRecorridoPlus.pdf" --out /tmp/fias-gps-test
+python scripts/validate_gps_data.py --data /tmp/fias-gps-test
 ```
 
-Abrir:
+## Operación normal en producción
 
-`http://localhost:8080/`
+No se ejecuta manualmente ningún conversor:
 
-Para probar autenticación local, esta dirección debe estar registrada en Entra si la política de la aplicación lo exige.
-
-## Incorporar nuevos reportes GPS
-
-Requiere `pdftotext` (Poppler) disponible en PATH.
-
-```bash
-python scripts/extract_gps.py \
-  "InformeRecorridoPlus - Agosto 2026.pdf" \
-  "InformeRecorridoPlus - Septiembre 2026.pdf" \
-  --out data/gps
+```text
+Administrador carga PDF
+→ SharePoint Entrada
+→ GitHub Actions
+→ JSON protegidos en SharePoint Publicados
+→ usuario pulsa Actualizar o vuelve a abrir el dashboard
 ```
 
-El script genera los JSON y actualiza `manifest.json`. Después solo se publican los archivos modificados.
-
-## Relación SharePoint ↔ GPS
-
-La correlación se realiza por la ventana temporal `FECHA INICIA USO` → `FECHA TERMINA USO`, con una tolerancia configurada en `GPS_CONFIG.matchPaddingMinutes`.
-
-Si SharePoint contiene vehículo o placa, se puede configurar en `GPS_CONFIG.trackerAliases` qué unidad corresponde a cada rastreador. Si no existe ese campo, la correlación se considera temporal y debe interpretarse como evidencia de referencia.
-
-El kilometraje GPS **no sustituye** el `RECORRIDO` institucional. Se muestra como contraste técnico porque ambos valores pueden diferir por ventana temporal, odómetro, puntos del dispositivo o forma de registro.
-
-
-## Fuente SharePoint configurada
-
-La fuente principal corresponde a la lista compartida del sitio `RecursosAdministrativo`:
-
-`https://fiasec.sharepoint.com/:l:/s/RecursosAdministrativo/JABGnrxRvgAqSaT9aEcQZvFfAbrh1fNSrNx-i-ixKrm_kZw?e=Ryl4oq`
-
-La aplicación identifica automáticamente esta lista por la firma de columnas esperada: FECHA INICIA USO, FECHA TERMINA, Usuario1, GRUPO, FECHA SOLICITUD, DESTINO, KM INICIAL, KM FINAL y RECORRIDO.
-
-## Ajustes v1.2
-
-- Los campos SharePoint de tipo **Persona** o **Lookup** ya no se muestran como identificadores numéricos cuando existe información de referencia. La aplicación intenta resolver `Usuario1LookupId` y otros lookups contra la lista interna de usuarios o la lista de referencia correspondiente.
-- Se reconoce también el nombre interno habitual `UserInfo` de la lista **User Information List** de SharePoint.
-- El mapa Leaflet quedó aislado en su propio contexto de apilamiento y el encabezado tiene prioridad visual, evitando que controles, popups o capas del mapa se superpongan al header al hacer zoom o desplazarse.
-
-## Corrección v1.3 – campos Persona de SharePoint
-
-La versión 1.3 resuelve los valores numéricos de columnas Persona/Grupo (por ejemplo `Usuario1 = 50`) contra la lista oculta **User Information List** de SharePoint. La aplicación intenta obtener esa lista directamente por título mediante Microsoft Graph y, si no puede precargarla completa, consulta bajo demanda únicamente los IDs presentes en los registros de movilización. Esto evita mostrar el `LookupId` como nombre del usuario.
-
-
-## Cambios v1.4
-- Los filtros se reorganizan en dos filas amplias en escritorio y responden a 3/2/1 columnas según el ancho de pantalla.
-- La lectura de SharePoint solicita explícitamente los campos mapeados con `fields($select=...)`. Esto permite que Microsoft Graph entregue el valor visible de columnas Lookup/Persona como `Usuario1`, además del `LookupId`.
-- El valor textual devuelto por SharePoint tiene prioridad sobre el ID numérico; la resolución por User Information List queda como mecanismo de respaldo.
-
-
-## Cambios v1.5 – identidad visual y autoría
-- Se sustituyó el badge genérico `FIAS` por un identificador vectorial institucional para la pantalla de acceso, cabecera y pie de página.
-- Los botones de **Actualizar** y **Salir** ahora tienen contraste explícito, icono y texto en escritorio; en móvil se compactan automáticamente.
-- Se reforzó la lectura visual del menú principal y del estado de conexión.
-- Se incorporó el crédito permanente **Desarrollado por: Jair Cruz** con enlace a LinkedIn: https://www.linkedin.com/in/jair-cruz-gallegos-65998776/
-- Versión visual: `1.5.0`.
+La configuración de despliegue y permisos está detallada en [DEPLOY.md](DEPLOY.md).
