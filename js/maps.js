@@ -1,6 +1,6 @@
-import { GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
-import { downsample } from './gps.js?v=2.2.0';
-import { escapeHtml, haversineKm } from './utils.js?v=2.2.0';
+import { GPS_CONFIG } from '../config/msal-config.js?v=2.3.0';
+import { downsample } from './gps.js?v=2.3.0';
+import { escapeHtml, haversineKm } from './utils.js?v=2.3.0';
 
 let map=null;
 let layers=[];
@@ -47,9 +47,13 @@ export function showCoverage(movements){
   initMap();clearLayers();addOrigin();
   const bounds=[];
   for(const m of movements){
-    const p=m.gps?.remote;if(!p)continue;
+    const validated=m.gps?.registeredDestinationEvidence?.point;
+    const inferred=m.gps?.destinationEvidence?.point;
+    const p=validated||inferred||m.gps?.remote;if(!p)continue;
+    const reference=validated?'Coincidencia GPS con el destino registrado':inferred?'Referencia territorial GPS':'Punto más alejado';
+    const distance=Number(p.distanceFromOrigin)||haversineKm(GPS_CONFIG.origin,p);
     const marker=L.circleMarker([p.lat,p.lon],{radius:7,weight:2,color:'#fff',fillColor:'#2f7d5a',fillOpacity:.85})
-      .bindPopup(`<strong>${escapeHtml(m.destinationLabel||m.destination||'Destino')}</strong><br>${escapeHtml(p.place||'')}<br>${(p.distanceFromOrigin||0).toFixed(1)} km desde Matriz FIAS`)
+      .bindPopup(`<strong>${escapeHtml(m.destinationLabel||m.destination||'Destino')}</strong><br><span>${escapeHtml(reference)}</span><br>${escapeHtml(p.place||'')}<br>${distance.toFixed(1)} km desde Matriz FIAS`)
       .addTo(map);layers.push(marker);bounds.push([p.lat,p.lon]);
     const line=L.polyline([[GPS_CONFIG.origin.lat,GPS_CONFIG.origin.lon],[p.lat,p.lon]],{weight:1.4,opacity:.26,dashArray:'5 6'}).addTo(map);layers.push(line);
   }
@@ -74,10 +78,11 @@ export function showTrip(movement){
   if(!trace.length){map.setView([GPS_CONFIG.origin.lat,GPS_CONFIG.origin.lon],9);return;}
   const pts=trace.map(p=>[p.lat,p.lon]);
   const line=L.polyline(pts,{weight:4,opacity:.78}).addTo(map);layers.push(line);
-  const start=trace[0],end=trace.at(-1),remote=movement.gps?.remote;
+  const start=trace[0],end=trace.at(-1),remote=movement.gps?.remote,validated=movement.gps?.registeredDestinationEvidence?.point;
   layers.push(L.circleMarker([start.lat,start.lon],{radius:7,weight:2,color:'#fff',fillColor:'#2563eb',fillOpacity:1}).bindPopup(`Inicio GPS<br>${escapeHtml(start.place)}`).addTo(map));
   layers.push(L.circleMarker([end.lat,end.lon],{radius:7,weight:2,color:'#fff',fillColor:'#7c3aed',fillOpacity:1}).bindPopup(`Fin GPS<br>${escapeHtml(end.place)}`).addTo(map));
-  if(remote)layers.push(L.circleMarker([remote.lat,remote.lon],{radius:8,weight:2,color:'#fff',fillColor:'#dc2626',fillOpacity:1}).bindPopup(`<strong>Punto más alejado</strong><br>${escapeHtml(remote.place)}<br>${remote.distanceFromOrigin.toFixed(1)} km desde FIAS`).addTo(map));
+  if(validated)layers.push(L.circleMarker([validated.lat,validated.lon],{radius:8,weight:2,color:'#fff',fillColor:'#16a34a',fillOpacity:1}).bindPopup(`<strong>Referencia GPS del destino registrado</strong><br>${escapeHtml(movement.destinationLabel||'Destino')}<br>${escapeHtml(validated.place||'')}`).addTo(map));
+  if(remote && (!validated || haversineKm(validated,remote)>.25))layers.push(L.circleMarker([remote.lat,remote.lon],{radius:8,weight:2,color:'#fff',fillColor:'#dc2626',fillOpacity:1}).bindPopup(`<strong>Punto más alejado</strong><br>${escapeHtml(remote.place)}<br>${remote.distanceFromOrigin.toFixed(1)} km desde FIAS`).addTo(map));
   fitLatLngs(pts);
 }
 

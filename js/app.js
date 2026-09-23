@@ -1,12 +1,12 @@
-import { APP_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
-import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics, isGpsAdministrator, getAuthenticatedEmail } from './auth.js?v=2.2.0';
-import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=2.2.0';
-import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=2.2.0';
-import { filterMovements } from './analytics.js?v=2.2.0';
-import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=2.2.0';
-import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt, formatDateTime } from './utils.js?v=2.2.0';
-import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, exportXlsx, exportPdf, bindDashboardCallbacks } from './dashboard.js?v=2.2.0';
-import { uploadGpsPdf, listPendingUploads, loadGpsHistory, adminStatus, validateGpsPdf } from './admin.js?v=2.2.0';
+import { APP_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.3.0';
+import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics, isGpsAdministrator, getAuthenticatedEmail } from './auth.js?v=2.3.0';
+import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=2.3.0';
+import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=2.3.0';
+import { filterMovements } from './analytics.js?v=2.3.0';
+import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=2.3.0';
+import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt, formatDateTime } from './utils.js?v=2.3.0';
+import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, exportXlsx, exportPdf, bindDashboardCallbacks } from './dashboard.js?v=2.3.0';
+import { uploadGpsPdf, listPendingUploads, loadGpsHistory, adminStatus, validateGpsPdf } from './admin.js?v=2.3.0';
 
 const state={all:[],filtered:[],mapMode:'coverage',ready:false,selectedGpsFiles:[],activeView:'overview'};
 const VIEW_META={

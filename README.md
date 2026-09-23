@@ -1,4 +1,4 @@
-# FIAS · Inteligencia de Movilizaciones 2.0
+# FIAS · Inteligencia de Movilizaciones 2.3
 
 Plataforma para integrar **movilizaciones institucionales de SharePoint** con reportes satelitales **InformeRecorridoPlus**, operando exclusivamente con **GitHub Pages + GitHub Actions + Microsoft 365/SharePoint**, sin servidor propio.
 
@@ -73,6 +73,9 @@ Esto es especialmente importante si el repositorio de GitHub es público: oculta
 - Gráficos interactivos y lectura de alcance territorial.
 - Mapas de cobertura, rutas GPS, calor e histórico.
 - Consolidación geográfica de destinos combinando la descripción de SharePoint con evidencia GPS cuando existe.
+- Validación del destino registrado contra puntos GPS coincidentes y contra la provincia recorrida.
+- Desambiguación de calles y provincias: una vía llamada `Francisco de Orellana` dentro de Quito permanece en `Quito · Pichincha`.
+- Ruta territorial mostrada en orden de recorrido (`Pichincha → Imbabura → Carchi`, por ejemplo).
 - Los destinos no reconocidos se agrupan como `Por identificar` para facilitar su depuración.
 - Filtros bajo demanda por fecha, grupo/proyecto, usuario, vehículo y actividad.
 - Indicadores de kilometraje y horas de uso.
@@ -81,9 +84,9 @@ Esto es especialmente importante si el repositorio de GitHub es público: oculta
 - Panel exclusivo de Administración GPS con cola e historial.
 - El diagnóstico de conexión, estado de datos y configuración de la fuente SharePoint se concentra en Administración GPS y solo se muestra a `jcruzg@fias.org.ec`.
 
-## Validación con los siete reportes suministrados
+## Validación con los ocho reportes suministrados
 
-El parser 2.0 fue ejecutado de nuevo sobre los PDF de enero a julio de 2026:
+El parser 2.3 fue ejecutado nuevamente sobre los PDF de enero a agosto de 2026:
 
 | Mes | Puntos extraídos |
 |---|---:|
@@ -94,9 +97,10 @@ El parser 2.0 fue ejecutado de nuevo sobre los PDF de enero a julio de 2026:
 | Mayo | 7.361 |
 | Junio | 3.089 |
 | Julio | 8.404 |
-| **Total** | **35.979** |
+| Agosto | 8.206 |
+| **Total** | **44.185** |
 
-Los siete archivos fueron procesados sin pérdida de registros respecto de la base histórica que contenía la versión anterior.
+Los ocho archivos fueron procesados conservando **44.185 puntos GPS**. La validación territorial ya no clasifica una provincia por coincidencias en nombres de calles; utiliza la estructura ciudad/provincia del reporte y la contrasta con el destino registrado en SharePoint.
 
 ## Carpetas SharePoint
 

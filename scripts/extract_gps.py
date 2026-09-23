@@ -38,6 +38,30 @@ EVENTS = [
 EVENT_CODE = {name: i for i, name in enumerate(EVENTS)}
 SCHEMA = ['t','lat','lon','speed','odometer','event','place']
 
+# Catálogo territorial mínimo para reparar nombres que pdftotext divide entre
+# líneas (p. ej. PICHI NCHA, TUNGURAHU A, PASTA ZA). La provincia se valida
+# únicamente en el componente territorial final; nunca por una palabra incluida
+# en el nombre de una calle.
+PROVINCE_CANON = {
+    'azuay':'AZUAY','bolivar':'BOLÍVAR','canar':'CAÑAR','carchi':'CARCHI',
+    'chimborazo':'CHIMBORAZO','cotopaxi':'COTOPAXI','eloro':'EL ORO',
+    'esmeraldas':'ESMERALDAS','guayas':'GUAYAS','imbabura':'IMBABURA',
+    'loja':'LOJA','losrios':'LOS RÍOS','manabi':'MANABÍ','moronasantiago':'MORONA SANTIAGO',
+    'napo':'NAPO','orellana':'ORELLANA','pastaza':'PASTAZA','pichincha':'PICHINCHA',
+    'santaelena':'SANTA ELENA','santodomingodelostsachilas':'SANTO DOMINGO DE LOS TSÁCHILAS',
+    'santodomingo':'SANTO DOMINGO DE LOS TSÁCHILAS','sucumbios':'SUCUMBÍOS',
+    'tungurahua':'TUNGURAHUA','zamorachinchipe':'ZAMORA CHINCHIPE'
+}
+CITY_PROVINCE = {
+    'quito':'PICHINCHA','cayambe':'PICHINCHA','latacunga':'COTOPAXI','ambato':'TUNGURAHUA',
+    'banosdeaguasanta':'TUNGURAHUA','riobamba':'CHIMBORAZO','tulcan':'CARCHI',
+    'ibarra':'IMBABURA','otavalo':'IMBABURA','tena':'NAPO','archidona':'NAPO',
+    'loreto':'ORELLANA','puertofranciscodeorellana':'ORELLANA','nuevaloja':'SUCUMBÍOS',
+    'shushufindi':'SUCUMBÍOS','macas':'MORONA SANTIAGO','cuenca':'AZUAY','loja':'LOJA',
+    'zamora':'ZAMORA CHINCHIPE','elpangui':'ZAMORA CHINCHIPE','guayaquil':'GUAYAS',
+    'portoviejo':'MANABÍ','manta':'MANABÍ','machala':'EL ORO','pastaza':'PASTAZA'
+}
+
 ROW_RE = re.compile(
     r'^\s*(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2})\s+'
     r'(.*?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+'
@@ -75,16 +99,42 @@ def pdf_text(pdf: Path) -> str:
     return proc.stdout
 
 
+def _compact_geo(value: str) -> str:
+    import unicodedata
+    value=unicodedata.normalize('NFD', str(value or ''))
+    value=''.join(c for c in value if unicodedata.category(c)!='Mn').lower()
+    return re.sub(r'[^a-z0-9]+','',value)
+
+
 def cleanup_place(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip(' |')
-    fixes = {
-        'PICHINCH A':'PICHINCHA','TUNGURAH UA':'TUNGURAHUA','COTOPA XI':'COTOPAXI',
-        'ORELLAN A':'ORELLANA','CHIMBOR AZO':'CHIMBORAZO','PASTAZ A':'PASTAZA',
-        'IMBABUR A':'IMBABURA','MORONA SANTIAG O':'MORONA SANTIAGO'
-    }
-    for a,b in fixes.items():
-        text = text.replace(a,b)
-    return text
+    if not text:
+        return ''
+    parts=[x.strip() for x in text.split(',')]
+    nonempty=[i for i,x in enumerate(parts) if x]
+    if not nonempty:
+        return text
+    last_i=nonempty[-1]
+    last_key=_compact_geo(parts[last_i])
+    # Fragmentos del texto de evento pueden quedar insertados dentro de la provincia
+    # por la maquetación en columnas del PDF. Se eliminan solo para validar el último
+    # componente territorial, sin tocar el nombre de la calle.
+    geo_key=last_key
+    for noise in ('ubicacion','tiempo','real','llamada','entrante','autocalibracion','calibracion'):
+        geo_key=geo_key.replace(noise,'')
+    if geo_key in PROVINCE_CANON:
+        parts[last_i]=PROVINCE_CANON[geo_key]
+    else:
+        # Respaldo para filas donde el texto del evento queda intercalado en el
+        # último componente. Una ciudad reconocida permite reconstruir la provincia.
+        inferred=''
+        for i in reversed(nonempty[-3:]):
+            inferred=CITY_PROVINCE.get(_compact_geo(parts[i]),'')
+            if inferred:
+                break
+        if inferred:
+            parts[last_i]=inferred
+    return ','.join(parts)
 
 
 def detect_event(block_text: str, middle: str) -> str:

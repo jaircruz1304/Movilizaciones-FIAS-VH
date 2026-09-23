@@ -1,6 +1,6 @@
-import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
-import { graph, graphPaged } from './graph.js?v=2.2.0';
-import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.2.0';
+import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.3.0';
+import { graph, graphPaged } from './graph.js?v=2.3.0';
+import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.3.0';
 
 const SEMANTICS={
   start:{label:'Fecha inicio uso',aliases:['fecha inicia uso','fecha inicio uso','fechainiciauso','fechainiciouso','fecha inicio','inicio uso','fecha salida','fecha movilizacion','fecha viaje']},
@@ -399,6 +399,17 @@ function fieldRaw(fields,key){
 
 const DESTINATION_PLACES=[
   {label:'Quito',province:'Pichincha',aliases:['quito','distrito metropolitano de quito','dmq']},
+  {label:'Tababela',province:'Pichincha',aliases:['tababela']},
+  {label:'Tumbaco',province:'Pichincha',aliases:['tumbaco']},
+  {label:'Cumbayá',province:'Pichincha',aliases:['cumbaya','cumbayá']},
+  {label:'Puembo',province:'Pichincha',aliases:['puembo']},
+  {label:'Pifo',province:'Pichincha',aliases:['pifo']},
+  {label:'Yaruquí',province:'Pichincha',aliases:['yaruqui','yaruquí']},
+  {label:'El Quinche',province:'Pichincha',aliases:['el quinche','quinche']},
+  {label:'Guayllabamba',province:'Pichincha',aliases:['guayllabamba']},
+  {label:'Calderón',province:'Pichincha',aliases:['calderon','calderón']},
+  {label:'Conocoto',province:'Pichincha',aliases:['conocoto']},
+  {label:'Amaguaña',province:'Pichincha',aliases:['amaguana','amaguaña']},
   {label:'Cayambe',province:'Pichincha',aliases:['cayambe']},
   {label:'Tabacundo',province:'Pichincha',aliases:['tabacundo']},
   {label:'Pedro Moncayo',province:'Pichincha',aliases:['pedro moncayo']},
@@ -481,9 +492,14 @@ export function extractDestinationGeo(text){
     return {label:chosen.label,province:chosen.province,kind:'place',confidence:3,source:'text'};
   }
   const provinceHits=[];
+  const normalizedRaw=normalizeText(raw);
+  // Evita interpretar nombres de vías como provincias. Caso frecuente en los
+  // reportes GPS: Av. Francisco de Orellana / Camino de Orellana dentro de Quito.
+  const orellanaIsStreet=/(?:^|\s)(?:avenida|av|calle|camino|via|ruta|fernando sanchez de|francisco de)\s+(?:francisco de\s+)?orellana(?:\s|$)/.test(normalizedRaw);
   for(const province of DESTINATION_PROVINCES){
     let idx=-1;
     for(const alias of province.aliases) idx=Math.max(idx,phraseIndex(raw,alias));
+    if(province.label==='Orellana' && orellanaIsStreet) idx=-1;
     if(idx>=0) provinceHits.push({...province,index:idx});
   }
   if(provinceHits.length){

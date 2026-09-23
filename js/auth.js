@@ -1,4 +1,4 @@
-import { AUTH_CONFIG, ACCESS_CONFIG } from '../config/msal-config.js?v=2.2.0';
+import { AUTH_CONFIG, ACCESS_CONFIG } from '../config/msal-config.js?v=2.3.0';
 
 let msalApp=null;
 let account=null;

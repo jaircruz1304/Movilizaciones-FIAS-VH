@@ -1,7 +1,7 @@
-import { AUTH_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
-import { graph } from './graph.js?v=2.2.0';
-import { resolveGpsSite } from './sharepoint.js?v=2.2.0';
-import { getAuthenticatedEmail, isGpsAdministrator } from './auth.js?v=2.2.0';
+import { AUTH_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.3.0';
+import { graph } from './graph.js?v=2.3.0';
+import { resolveGpsSite } from './sharepoint.js?v=2.3.0';
+import { getAuthenticatedEmail, isGpsAdministrator } from './auth.js?v=2.3.0';
 
 let driveCache=null;
 

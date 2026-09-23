@@ -1,4 +1,4 @@
-import { groupCounts, sum, average, iqrOutlierThreshold, formatDateKey } from './utils.js?v=2.2.0';
+import { groupCounts, sum, average, iqrOutlierThreshold, formatDateKey } from './utils.js?v=2.3.0';
 
 export function filterMovements(rows,filters={}){
   const q=(filters.search||'').trim().toLowerCase();
@@ -118,6 +118,7 @@ export function anomalies(rows){
     if(r.distance>0&&distances.length>=4&&r.distance>dThr.high)issues.push('Recorrido SharePoint atípicamente alto');
     if(r.durationHours>0&&durations.length>=4&&r.durationHours>hThr.high)issues.push('Duración atípicamente alta');
     if(r.gps?.agreement==='Revisar')issues.push('Diferencia relevante entre recorrido SharePoint y GPS');
+    if(r.destinationValidation==='Revisar destino')issues.push('Destino registrado no coincide con la cobertura GPS');
     if((r.gps?.maxSpeed||0)>=120)issues.push('Velocidad GPS máxima elevada');
     if(!r.destination)issues.push('Destino no informado');
     else if(r.destinationLabel==='Por identificar')issues.push('Destino geográfico no identificado');

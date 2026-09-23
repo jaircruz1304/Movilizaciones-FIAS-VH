@@ -1,9 +1,9 @@
-import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=2.2.0';
-import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights, destinationSummary, territorialScope } from './analytics.js?v=2.2.0';
-import { gpsSummary, gpsState } from './gps.js?v=2.2.0';
-import { sharepointState, SEMANTICS } from './sharepoint.js?v=2.2.0';
-import { authDiagnostics } from './auth.js?v=2.2.0';
-import { showTrip } from './maps.js?v=2.2.0';
+import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=2.3.0';
+import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights, destinationSummary, territorialScope } from './analytics.js?v=2.3.0';
+import { gpsSummary, gpsState } from './gps.js?v=2.3.0';
+import { sharepointState, SEMANTICS } from './sharepoint.js?v=2.3.0';
+import { authDiagnostics } from './auth.js?v=2.3.0';
+import { showTrip } from './maps.js?v=2.3.0';
 
 const charts={};
 let currentRows=[];
@@ -66,7 +66,8 @@ export function renderOperations(rows=currentRows){
   body.innerHTML=rows.length?rows.slice().sort((a,b)=>(b.start?.getTime()||0)-(a.start?.getTime()||0)).map(r=>{
     const agreement=r.gps?.agreement||'Sin GPS';
     const cls=agreement==='Alta'?'ok':agreement==='Media'||agreement==='Referencia'?'warn':agreement==='Revisar'?'bad':'neutral';
-    return `<tr data-id="${escapeHtml(r.id)}"><td>${escapeHtml(formatDateTime(r.start))}<br><span class="muted">${escapeHtml(formatDateTime(r.end))}</span></td><td>${escapeHtml(r.requester||'—')}</td><td>${escapeHtml(r.project||r.group||'—')}</td><td><strong>${escapeHtml(r.destinationLabel||'—')}</strong><br><span class="muted">${escapeHtml((r.destination||'').slice(0,95))}</span></td><td>${r.distance?fmtKm(r.distance):'—'}</td><td>${r.gps?pill('Relacionado','ok'):pill('Sin relación','neutral')}</td><td>${r.gps?.odometerKm?fmtKm(r.gps.odometerKm):'—'}</td><td>${escapeHtml((r.gps?.provinces||[]).slice(0,3).join(' · ')||'—')}</td><td>${pill(agreement,cls)}</td></tr>`;
+    const territorial=[r.destinationProvince,r.destinationValidation].filter(Boolean).join(' · ');
+    return `<tr data-id="${escapeHtml(r.id)}"><td>${escapeHtml(formatDateTime(r.start))}<br><span class="muted">${escapeHtml(formatDateTime(r.end))}</span></td><td>${escapeHtml(r.requester||'—')}</td><td>${escapeHtml(r.project||r.group||'—')}</td><td><strong>${escapeHtml(r.destinationLabel||'—')}</strong>${territorial?`<br><span class="muted">${escapeHtml(territorial)}</span>`:''}<br><span class="muted">${escapeHtml((r.destination||'').slice(0,95))}</span></td><td>${r.distance?fmtKm(r.distance):'—'}</td><td>${r.gps?pill('Relacionado','ok'):pill('Sin relación','neutral')}</td><td>${r.gps?.odometerKm?fmtKm(r.gps.odometerKm):'—'}</td><td>${escapeHtml((r.gps?.provinces||[]).slice(0,4).join(' → ')||'—')}</td><td>${pill(agreement,cls)}</td></tr>`;
   }).join(''):'<tr><td colspan="9"><div class="empty">No existen movilizaciones para los filtros aplicados.</div></td></tr>';
   body.querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',()=>openDetail(rows.find(r=>r.id===tr.dataset.id))));
 }
@@ -147,10 +148,10 @@ function openDetail(r){
   $('detailBody').innerHTML=`
     <div class="detail-summary">
       ${detailMetric('Inicio',formatDateTime(r.start))}${detailMetric('Fin',formatDateTime(r.end))}${detailMetric('Solicitante',r.requester||'—')}${detailMetric('Grupo / proyecto',r.project||r.group||'—')}${detailMetric('Km SharePoint',r.distance?fmtKm(r.distance):'—')}${detailMetric('Km GPS',gps?.odometerKm?fmtKm(gps.odometerKm):'—')}
-      ${detailMetric('Velocidad máx.',gps?`${fmtInt(gps.maxSpeed)} km/h`:'—')}${detailMetric('Provincia destino',r.destinationProvince||'—')}${detailMetric('Destino consolidado',r.destinationLabel||'Por identificar')}${detailMetric('Fuente destino',r.destinationSource||'—')}${detailMetric('Punto más alejado',gps?.remote?fmtKm(gps.remote.distanceFromOrigin):'—')}${detailMetric('Conciliación',gps?.agreement||'Sin GPS')}${detailMetric('Anticipación solicitud',Number.isFinite(r.leadHours)?`${fmt1(r.leadHours)} h`:'—')}${detailMetric('Duración',r.durationHours?`${fmt1(r.durationHours)} h`:'—')}
+      ${detailMetric('Velocidad máx.',gps?`${fmtInt(gps.maxSpeed)} km/h`:'—')}${detailMetric('Provincia destino',r.destinationProvince||'—')}${detailMetric('Destino consolidado',r.destinationLabel||'Por identificar')}${detailMetric('Validación destino',r.destinationValidation||'—')}${detailMetric('Fuente destino',r.destinationSource||'—')}${detailMetric('Punto más alejado',gps?.remote?fmtKm(gps.remote.distanceFromOrigin):'—')}${detailMetric('Conciliación',gps?.agreement||'Sin GPS')}${detailMetric('Anticipación solicitud',Number.isFinite(r.leadHours)?`${fmt1(r.leadHours)} h`:'—')}${detailMetric('Duración',r.durationHours?`${fmt1(r.durationHours)} h`:'—')}
     </div>
     <article class="panel compact"><span class="eyebrow">Detalle original registrado</span><p>${escapeHtml(r.destination||'Sin información')}</p></article>
-    ${gps?`<article class="panel compact" style="margin-top:10px"><span class="eyebrow">Evidencia GPS</span><p><strong>${escapeHtml(gps.tracker)}</strong> · ${fmtInt(gps.points)} puntos · ${fmtKm(gps.pathKm)} de trayectoria geométrica · ${fmtInt(gps.speedingEvents)} eventos de exceso de velocidad.</p><p class="muted">Punto remoto: ${escapeHtml(gps.remote?.place||'—')}</p><button id="btnDetailMap" class="primary-action small"><i class="bi bi-map"></i> Ver ruta GPS en el mapa</button></article>`:''}
+    ${gps?`<article class="panel compact" style="margin-top:10px"><span class="eyebrow">Evidencia GPS</span><p><strong>${escapeHtml(gps.tracker)}</strong> · ${fmtInt(gps.points)} puntos · ${fmtKm(gps.pathKm)} de trayectoria geométrica · ${fmtInt(gps.speedingEvents)} eventos de exceso de velocidad.</p><p class="muted">Destino GPS estructurado: ${escapeHtml(gps.destinationEvidence?.label||'—')}${gps.destinationEvidence?.province?` · ${escapeHtml(gps.destinationEvidence.province)}`:''}</p><p class="muted">Punto más alejado: ${escapeHtml(gps.remote?.place||'—')}</p><button id="btnDetailMap" class="primary-action small"><i class="bi bi-map"></i> Ver ruta GPS en el mapa</button></article>`:''}
     <details style="margin-top:12px"><summary>Registro completo de SharePoint</summary><pre style="white-space:pre-wrap;background:#f5f7f5;padding:12px;border-radius:12px;overflow:auto">${escapeHtml(safeJson(r.raw))}</pre></details>`;
   $('detailDrawer').classList.add('open');$('detailDrawer').setAttribute('aria-hidden','false');
   $('btnDetailMap')?.addEventListener('click',()=>{closeDetail();onOpenTrip?.(r);});
@@ -165,10 +166,10 @@ export function collectMapping(){const map={};$$('[data-map-key]',$('mappingEdit
 function exportRows(rows){
   return rows.map(r=>({
     ID:r.id||'', Inicio:formatDateTime(r.start), Fin:formatDateTime(r.end), Solicitante:r.requester||'',
-    'Grupo/Proyecto':r.project||r.group||'', 'Destino consolidado':r.destinationLabel||'', 'Provincia destino':r.destinationProvince||'', 'Detalle destino':r.destination||'', Actividad:r.activityCategory||'',
+    'Grupo/Proyecto':r.project||r.group||'', 'Destino consolidado':r.destinationLabel||'', 'Provincia destino':r.destinationProvince||'', 'Validación destino':r.destinationValidation||'', 'Fuente destino':r.destinationSource||'', 'Detalle destino':r.destination||'', Actividad:r.activityCategory||'',
     Vehiculo:r.vehicle||r.plate||'', 'Km SharePoint':r.distance||0,
     'GPS tracker':r.gps?.tracker||'', 'Km GPS':r.gps?.odometerKm||0, 'Diferencia km':r.gps?.differenceKm||0,
-    'Velocidad maxima':r.gps?.maxSpeed||0, Provincias:(r.gps?.provinces||[]).join(' | '), Conciliacion:r.gps?.agreement||''
+    'Velocidad maxima':r.gps?.maxSpeed||0, 'Ruta GPS':(r.gps?.provinces||[]).join(' > '), Conciliacion:r.gps?.agreement||''
   }));
 }
 
