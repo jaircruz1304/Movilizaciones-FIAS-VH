@@ -1,7 +1,7 @@
-import { GPS_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.0';
-import { haversineKm, normalizeText, percentile } from './utils.js?v=2.1.0';
-import { graph } from './graph.js?v=2.1.0';
-import { resolveGpsSite } from './sharepoint.js?v=2.1.0';
+import { GPS_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.1';
+import { haversineKm, normalizeText, percentile } from './utils.js?v=2.1.1';
+import { graph } from './graph.js?v=2.1.1';
+import { resolveGpsSite } from './sharepoint.js?v=2.1.1';
 
 const gpsState={manifest:null,points:[],trackers:new Map(),loaded:false,source:'SharePoint protegido'};
 export { gpsState };

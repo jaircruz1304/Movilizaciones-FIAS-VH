@@ -78,6 +78,7 @@ Esto es especialmente importante si el repositorio de GitHub es público: oculta
 - Conteo de vehículos activos y métricas de utilización.
 - Exportación CSV, Excel y PDF.
 - Panel exclusivo de Administración GPS con cola e historial.
+- El diagnóstico de conexión, estado de datos y configuración de la fuente SharePoint se concentra en Administración GPS y solo se muestra a `jcruzg@fias.org.ec`.
 
 ## Validación con los siete reportes suministrados
 

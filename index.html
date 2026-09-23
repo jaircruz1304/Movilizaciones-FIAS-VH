@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fias.org.ec" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./css/styles.css?v=2.1.0" />
+  <link rel="stylesheet" href="./css/styles.css?v=2.1.1" />
 
 </head>
 <body>
@@ -144,8 +144,7 @@
 
       <section id="view-quality" class="view">
         <div class="layout-grid">
-          <article class="panel span-7"><div class="panel-head"><div><span class="eyebrow">Completitud</span><h3>Cobertura de campos para análisis</h3></div></div><div id="qualityGrid" class="quality-grid"></div></article>
-          <article class="panel span-5"><div class="panel-head"><div><span class="eyebrow">Fuentes</span><h3>Conexión y estado de datos</h3></div><button id="btnOpenSource" class="text-action">Configurar</button></div><div id="sourceDiagnostics" class="diagnostics"></div></article>
+          <article class="panel span-12"><div class="panel-head"><div><span class="eyebrow">Completitud</span><h3>Cobertura de campos para análisis</h3></div></div><div id="qualityGrid" class="quality-grid"></div></article>
           <article class="panel span-12"><div class="panel-head"><div><span class="eyebrow">Excepciones</span><h3>Registros que requieren revisión</h3></div></div><div class="table-scroll"><table><thead><tr><th>Fecha</th><th>Destino</th><th>Usuario</th><th>Observación automática</th></tr></thead><tbody id="anomalyRows"></tbody></table></div></article>
         </div>
       </section>
@@ -153,6 +152,10 @@
       <section id="view-admin" class="view">
         <div class="admin-banner"><div><span class="eyebrow">Administración restringida</span><h3>Ingreso automático de reportes GPS</h3><p>Los PDF se depositan en SharePoint. GitHub Actions los valida, transforma e integra en JSON protegidos dentro de SharePoint, sin exponer coordenadas en GitHub Pages ni requerir reprocesamiento manual.</p></div><span id="adminIdentity" class="admin-identity"></span></div>
         <div class="layout-grid">
+          <article class="panel span-12 admin-data-control">
+            <div class="panel-head"><div><span class="eyebrow">Control de datos</span><h3>Conexión y estado de datos</h3></div><button id="btnOpenSource" class="text-action"><i class="bi bi-sliders"></i> Configurar</button></div>
+            <div id="sourceDiagnostics" class="diagnostics diagnostics-admin"></div>
+          </article>
           <article class="panel span-7">
             <div class="panel-head"><div><span class="eyebrow">Nueva carga</span><h3>Reporte InformeRecorridoPlus</h3></div><span class="pill ok">Solo administrador</span></div>
             <label id="gpsDropzone" class="dropzone" for="gpsPdfInput">
@@ -183,6 +186,6 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
-  <script type="module" src="./js/app.js?v=2.1.0"></script>
+  <script type="module" src="./js/app.js?v=2.1.1"></script>
 </body>
 </html>

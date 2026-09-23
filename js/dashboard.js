@@ -1,9 +1,9 @@
-import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=2.1.0';
-import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights } from './analytics.js?v=2.1.0';
-import { gpsSummary, gpsState } from './gps.js?v=2.1.0';
-import { sharepointState, SEMANTICS } from './sharepoint.js?v=2.1.0';
-import { authDiagnostics } from './auth.js?v=2.1.0';
-import { showTrip } from './maps.js?v=2.1.0';
+import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=2.1.1';
+import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights } from './analytics.js?v=2.1.1';
+import { gpsSummary, gpsState } from './gps.js?v=2.1.1';
+import { sharepointState, SEMANTICS } from './sharepoint.js?v=2.1.1';
+import { authDiagnostics } from './auth.js?v=2.1.1';
+import { showTrip } from './maps.js?v=2.1.1';
 
 const charts={};
 let currentRows=[];
@@ -113,15 +113,25 @@ export function renderQuality(rows=currentRows){
   $('qualityGrid').innerHTML=q.map(x=>`<div class="quality-item"><span>${escapeHtml(x.label)}</span><strong>${fmtPct(x.pct)}</strong><div class="progress"><div style="width:${Math.min(100,x.pct)}%"></div></div><small>${fmtInt(x.count)} de ${fmtInt(rows.length)}</small></div>`).join('');
   const d=sharepointState;
   const a=authDiagnostics();
-  $('sourceDiagnostics').innerHTML=[
-    ['Usuario',a.account||'—'],['Sitio',d.site?.displayName||'—'],['Lista',d.activeList?.displayName||d.activeList?.name||'—'],['Registros',fmtInt(d.items.length)],['GPS',`${fmtInt(gpsState.points.length)} puntos`],['Base GPS actualizada',gpsState.manifest?.updatedAt?formatDateTime(new Date(gpsState.manifest.updatedAt)):'—'],['Redirect URI',a.redirectUri]
-  ].map(([k,v])=>`<div class="diag-row"><span>${escapeHtml(k)}</span><strong title="${escapeHtml(v)}">${escapeHtml(v)}</strong></div>`).join('');
+  const diagnostics=$('sourceDiagnostics');
+  if(diagnostics){
+    diagnostics.innerHTML=a.isGpsAdministrator ? [
+      ['Usuario',a.account||'—'],['Sitio',d.site?.displayName||'—'],['Lista',d.activeList?.displayName||d.activeList?.name||'—'],['Registros',fmtInt(d.items.length)],['GPS',`${fmtInt(gpsState.points.length)} puntos`],['Base GPS actualizada',gpsState.manifest?.updatedAt?formatDateTime(new Date(gpsState.manifest.updatedAt)):'—'],['Redirect URI',a.redirectUri]
+    ].map(([k,v])=>`<div class="diag-row"><span>${escapeHtml(k)}</span><strong title="${escapeHtml(v)}">${escapeHtml(v)}</strong></div>`).join('') : '';
+  }
   const an=anomalies(rows).slice(0,100);
   $('anomalyRows').innerHTML=an.length?an.map(r=>`<tr data-id="${escapeHtml(r.id)}"><td>${escapeHtml(formatDateTime(r.start))}</td><td>${escapeHtml(r.destinationLabel||r.destination||'—')}</td><td>${escapeHtml(r.requester||'—')}</td><td>${r.issues.map(x=>pill(x,'warn')).join(' ')}</td></tr>`).join(''):'<tr><td colspan="4"><div class="empty">No se detectaron excepciones con las reglas actuales.</div></td></tr>';
   $('anomalyRows').querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',()=>openDetail(rows.find(r=>r.id===tr.dataset.id))));
 }
 
 export function renderSourceModal(){
+  if(!authDiagnostics().isGpsAdministrator){
+    const chooser=$('listChooser');
+    const editor=$('mappingEditor');
+    if(chooser) chooser.innerHTML='<div class="empty">Configuración restringida al administrador autorizado.</div>';
+    if(editor) editor.innerHTML='';
+    return;
+  }
   const lists=sharepointState.lists.filter(l=>!(l.list?.hidden));
   $('listChooser').innerHTML=lists.slice(0,25).map(l=>`<div class="source-card ${l.id===sharepointState.activeList?.id?'active':''}"><div><strong>${escapeHtml(l.displayName||l.name)}</strong><small>${escapeHtml(l.webUrl||'')} · puntuación ${fmtInt(l.score||0)}</small></div><button data-list="${escapeHtml(l.id)}">${l.id===sharepointState.activeList?.id?'Activa':'Usar'}</button></div>`).join('');
   $('listChooser').querySelectorAll('button[data-list]').forEach(b=>b.addEventListener('click',()=>onChooseList?.(b.dataset.list)));
@@ -147,7 +157,7 @@ function openDetail(r){
 function detailMetric(label,value){return `<div class="detail-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;}
 export function closeDetail(){$('detailDrawer').classList.remove('open');$('detailDrawer').setAttribute('aria-hidden','true');}
 
-export function openSourceModal(){renderSourceModal();$('sourceModal').classList.add('open');$('sourceModal').setAttribute('aria-hidden','false');}
+export function openSourceModal(){if(!authDiagnostics().isGpsAdministrator)return;renderSourceModal();$('sourceModal').classList.add('open');$('sourceModal').setAttribute('aria-hidden','false');}
 export function closeSourceModal(){$('sourceModal').classList.remove('open');$('sourceModal').setAttribute('aria-hidden','true');}
 export function collectMapping(){const map={};$$('[data-map-key]',$('mappingEditor')).forEach(s=>map[s.dataset.mapKey]=s.value);return map;}
 

@@ -1,12 +1,12 @@
-import { APP_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.0';
-import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics, isGpsAdministrator, getAuthenticatedEmail } from './auth.js?v=2.1.0';
-import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=2.1.0';
-import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=2.1.0';
-import { filterMovements } from './analytics.js?v=2.1.0';
-import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=2.1.0';
-import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt, formatDateTime } from './utils.js?v=2.1.0';
-import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, exportXlsx, exportPdf, renderComparison, bindDashboardCallbacks } from './dashboard.js?v=2.1.0';
-import { uploadGpsPdf, listPendingUploads, loadGpsHistory, adminStatus, validateGpsPdf } from './admin.js?v=2.1.0';
+import { APP_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.1';
+import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics, isGpsAdministrator, getAuthenticatedEmail } from './auth.js?v=2.1.1';
+import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=2.1.1';
+import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=2.1.1';
+import { filterMovements } from './analytics.js?v=2.1.1';
+import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=2.1.1';
+import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt, formatDateTime } from './utils.js?v=2.1.1';
+import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, exportXlsx, exportPdf, renderComparison, bindDashboardCallbacks } from './dashboard.js?v=2.1.1';
+import { uploadGpsPdf, listPendingUploads, loadGpsHistory, adminStatus, validateGpsPdf } from './admin.js?v=2.1.1';
 
 const state={all:[],filtered:[],mapMode:'coverage',ready:false,selectedGpsFiles:[],activeView:'overview'};
 const VIEW_META={
@@ -86,7 +86,7 @@ async function syncAll(){
     toast('Sincronización completa',`${fmtInt(state.all.length)} movilizaciones · ${fmtInt(gpsState.points.length)} puntos GPS.`);
   }catch(err){
     console.error(err);updateConnection(false);toast('Error de sincronización',err.message||String(err),'bad');
-    openSourceModal();
+    if(isGpsAdministrator()) openSourceModal();
   }finally{setLoading(false);}
 }
 
@@ -273,7 +273,7 @@ function bindEvents(){
   $('btnExportCsv').addEventListener('click',()=>safeExport(exportCsv,'Exportación CSV'));
   $('btnExportXlsx').addEventListener('click',()=>safeExport(exportXlsx,'Exportación Excel'));
   $('btnExportPdf').addEventListener('click',()=>safeExport(exportPdf,'Exportación PDF'));
-  $('btnOpenSource').addEventListener('click',openSourceModal);
+  $('btnOpenSource').addEventListener('click',()=>{if(isGpsAdministrator())openSourceModal();});
   $('btnCloseSource').addEventListener('click',closeSourceModal);
   $('btnCloseDrawer').addEventListener('click',closeDetail);
   $('detailDrawer').addEventListener('click',e=>{if(e.target===$('detailDrawer'))closeDetail();});

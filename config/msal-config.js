@@ -62,6 +62,6 @@ export const APP_CONFIG = {
   name: 'FIAS · Inteligencia de Movilizaciones',
   timezone: 'America/Guayaquil',
   locale: 'es-EC',
-  version: '2.1.0',
+  version: '2.1.1',
   logoUrl: 'https://fias.org.ec/wp-content/uploads/2021/11/Logo_FIAS_web.png'
 };

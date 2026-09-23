@@ -1,6 +1,6 @@
-import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.0';
-import { graph, graphPaged } from './graph.js?v=2.1.0';
-import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.1.0';
+import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.1';
+import { graph, graphPaged } from './graph.js?v=2.1.1';
+import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.1.1';
 
 const SEMANTICS={
   start:{label:'Fecha inicio uso',aliases:['fecha inicia uso','fecha inicio uso','fechainiciauso','fechainiciouso','fecha inicio','inicio uso','fecha salida','fecha movilizacion','fecha viaje']},

@@ -1,3 +1,13 @@
+# Changelog
+
+## v2.1.1
+
+- El panel **Conexión y estado de datos** se trasladó desde Control de datos a **Administración GPS**.
+- El rótulo **Fuentes** fue eliminado y sustituido por **Control de datos**.
+- El diagnóstico de conexión y la configuración de SharePoint quedan visibles únicamente para `jcruzg@fias.org.ec`.
+- Los usuarios no administradores ya no reciben la ventana de configuración de fuente ante un error de sincronización.
+- El módulo Control de datos conserva únicamente completitud y excepciones, mejorando su jerarquía visual.
+
 # 2.1.0
 
 - Rediseño del área de filtros: ahora permanece contraída y se abre bajo demanda desde un botón compacto.
