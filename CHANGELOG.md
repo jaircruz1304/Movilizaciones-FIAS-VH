@@ -1,6 +1,17 @@
 # Changelog
 
-## v2.1.1
+## v2.2.0
+
+- Se elimina del Panorama el comparador manual de dos períodos.
+- Se reemplaza “Actividades predominantes” por “Alcance territorial de las movilizaciones”.
+- Se incorpora consolidación geográfica de destinos usando el texto registrado y, cuando existe, el punto GPS más alejado de la Matriz FIAS.
+- Se normalizan ciudades/cantones y provincias frecuentes para evitar que descripciones institucionales completas se conviertan en destinos distintos.
+- Quito se trata como origen institucional cuando en el mismo texto consta otro destino, priorizando el lugar externo.
+- El ranking de destinos muestra ubicación consolidada, provincia y número de registros con evidencia GPS.
+- Los registros no reconocidos se agrupan como “Por identificar”, facilitando su depuración.
+- El detalle y las exportaciones incorporan destino consolidado y provincia de destino.
+
+## v2.2.0
 
 - El panel **Conexión y estado de datos** se trasladó desde Control de datos a **Administración GPS**.
 - El rótulo **Fuentes** fue eliminado y sustituido por **Control de datos**.

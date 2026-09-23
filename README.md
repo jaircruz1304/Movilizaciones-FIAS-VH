@@ -70,10 +70,11 @@ Esto es especialmente importante si el repositorio de GitHub es público: oculta
 - Modo claro/oscuro persistente.
 - Logo oficial FIAS.
 - Indicadores ejecutivos.
-- Gráficos interactivos.
+- Gráficos interactivos y lectura de alcance territorial.
 - Mapas de cobertura, rutas GPS, calor e histórico.
+- Consolidación geográfica de destinos combinando la descripción de SharePoint con evidencia GPS cuando existe.
+- Los destinos no reconocidos se agrupan como `Por identificar` para facilitar su depuración.
 - Filtros bajo demanda por fecha, grupo/proyecto, usuario, vehículo y actividad.
-- Comparación de períodos.
 - Indicadores de kilometraje y horas de uso.
 - Conteo de vehículos activos y métricas de utilización.
 - Exportación CSV, Excel y PDF.

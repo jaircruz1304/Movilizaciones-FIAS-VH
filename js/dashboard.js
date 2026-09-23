@@ -1,9 +1,9 @@
-import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=2.1.1';
-import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights } from './analytics.js?v=2.1.1';
-import { gpsSummary, gpsState } from './gps.js?v=2.1.1';
-import { sharepointState, SEMANTICS } from './sharepoint.js?v=2.1.1';
-import { authDiagnostics } from './auth.js?v=2.1.1';
-import { showTrip } from './maps.js?v=2.1.1';
+import { $, $$, escapeHtml, fmtInt, fmtKm, fmtPct, fmt1, formatDateTime, formatDate, groupCounts, csvEscape, downloadText, safeJson } from './utils.js?v=2.2.0';
+import { kpis, monthlyTrend, top, weekdayDemand, provinceCoverage, routeClusters, anomalies, dataQuality, executiveInsights, destinationSummary, territorialScope } from './analytics.js?v=2.2.0';
+import { gpsSummary, gpsState } from './gps.js?v=2.2.0';
+import { sharepointState, SEMANTICS } from './sharepoint.js?v=2.2.0';
+import { authDiagnostics } from './auth.js?v=2.2.0';
+import { showTrip } from './maps.js?v=2.2.0';
 
 const charts={};
 let currentRows=[];
@@ -46,10 +46,11 @@ export function renderOverview(rows=currentRows){
     {label:'Movilizaciones',data:trend.map(x=>x.movements),borderWidth:0,borderRadius:6,yAxisID:'y'},
     {label:'Km SharePoint',data:trend.map(x=>Math.round(x.km)),type:'line',borderWidth:2,tension:.3,pointRadius:3,yAxisID:'y1'}
   ],{options:{scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:'Movilizaciones'}},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Km'}}}}});
-  $('destinationRanking').innerHTML=rankHtml(top(rows,'destinationLabel',8));
+  const destinations=destinationSummary(rows,8);
+  $('destinationRanking').innerHTML=destinations.length?destinations.map((x,i)=>`<div class="rank-row"><div class="rank-no">${i+1}</div><div class="rank-main"><strong title="${escapeHtml(x.label)}">${escapeHtml(x.label)}</strong><small>${escapeHtml(x.province||'Ubicación por completar')} · ${fmtInt(x.gps)} con GPS</small></div><div class="rank-val">${fmtInt(x.count)}</div></div>`).join(''):'<div class="empty">Sin datos para el filtro actual.</div>';
   $('insightList').innerHTML=executiveInsights(rows).map(x=>`<div class="insight"><i class="bi bi-stars"></i> ${escapeHtml(x)}</div>`).join('');
-  const acts=top(rows,'activityCategory',8);
-  chart('chartActivities','doughnut',acts.map(x=>x[0]),[{label:'Movilizaciones',data:acts.map(x=>x[1]),borderWidth:0}],{legend:true});
+  const scope=territorialScope(rows);
+  chart('chartTerritorialScope','bar',scope.map(x=>x.label),[{label:'Movilizaciones',data:scope.map(x=>x.value),borderWidth:0,borderRadius:5}],{legend:false,options:{indexAxis:'y',scales:{x:{beginAtZero:true},y:{grid:{display:false}}}}});
 }
 
 export function renderTerritory(rows=currentRows){
@@ -146,9 +147,9 @@ function openDetail(r){
   $('detailBody').innerHTML=`
     <div class="detail-summary">
       ${detailMetric('Inicio',formatDateTime(r.start))}${detailMetric('Fin',formatDateTime(r.end))}${detailMetric('Solicitante',r.requester||'—')}${detailMetric('Grupo / proyecto',r.project||r.group||'—')}${detailMetric('Km SharePoint',r.distance?fmtKm(r.distance):'—')}${detailMetric('Km GPS',gps?.odometerKm?fmtKm(gps.odometerKm):'—')}
-      ${detailMetric('Velocidad máx.',gps?`${fmtInt(gps.maxSpeed)} km/h`:'—')}${detailMetric('Provincias',(gps?.provinces||[]).join(' · ')||'—')}${detailMetric('Punto más alejado',gps?.remote?fmtKm(gps.remote.distanceFromOrigin):'—')}${detailMetric('Conciliación',gps?.agreement||'Sin GPS')}${detailMetric('Anticipación solicitud',Number.isFinite(r.leadHours)?`${fmt1(r.leadHours)} h`:'—')}${detailMetric('Duración',r.durationHours?`${fmt1(r.durationHours)} h`:'—')}
+      ${detailMetric('Velocidad máx.',gps?`${fmtInt(gps.maxSpeed)} km/h`:'—')}${detailMetric('Provincia destino',r.destinationProvince||'—')}${detailMetric('Destino consolidado',r.destinationLabel||'Por identificar')}${detailMetric('Fuente destino',r.destinationSource||'—')}${detailMetric('Punto más alejado',gps?.remote?fmtKm(gps.remote.distanceFromOrigin):'—')}${detailMetric('Conciliación',gps?.agreement||'Sin GPS')}${detailMetric('Anticipación solicitud',Number.isFinite(r.leadHours)?`${fmt1(r.leadHours)} h`:'—')}${detailMetric('Duración',r.durationHours?`${fmt1(r.durationHours)} h`:'—')}
     </div>
-    <article class="panel compact"><span class="eyebrow">Destino / finalidad registrada</span><p>${escapeHtml(r.destination||'Sin información')}</p></article>
+    <article class="panel compact"><span class="eyebrow">Detalle original registrado</span><p>${escapeHtml(r.destination||'Sin información')}</p></article>
     ${gps?`<article class="panel compact" style="margin-top:10px"><span class="eyebrow">Evidencia GPS</span><p><strong>${escapeHtml(gps.tracker)}</strong> · ${fmtInt(gps.points)} puntos · ${fmtKm(gps.pathKm)} de trayectoria geométrica · ${fmtInt(gps.speedingEvents)} eventos de exceso de velocidad.</p><p class="muted">Punto remoto: ${escapeHtml(gps.remote?.place||'—')}</p><button id="btnDetailMap" class="primary-action small"><i class="bi bi-map"></i> Ver ruta GPS en el mapa</button></article>`:''}
     <details style="margin-top:12px"><summary>Registro completo de SharePoint</summary><pre style="white-space:pre-wrap;background:#f5f7f5;padding:12px;border-radius:12px;overflow:auto">${escapeHtml(safeJson(r.raw))}</pre></details>`;
   $('detailDrawer').classList.add('open');$('detailDrawer').setAttribute('aria-hidden','false');
@@ -164,7 +165,7 @@ export function collectMapping(){const map={};$$('[data-map-key]',$('mappingEdit
 function exportRows(rows){
   return rows.map(r=>({
     ID:r.id||'', Inicio:formatDateTime(r.start), Fin:formatDateTime(r.end), Solicitante:r.requester||'',
-    'Grupo/Proyecto':r.project||r.group||'', Destino:r.destination||'', Actividad:r.activityCategory||'',
+    'Grupo/Proyecto':r.project||r.group||'', 'Destino consolidado':r.destinationLabel||'', 'Provincia destino':r.destinationProvince||'', 'Detalle destino':r.destination||'', Actividad:r.activityCategory||'',
     Vehiculo:r.vehicle||r.plate||'', 'Km SharePoint':r.distance||0,
     'GPS tracker':r.gps?.tracker||'', 'Km GPS':r.gps?.odometerKm||0, 'Diferencia km':r.gps?.differenceKm||0,
     'Velocidad maxima':r.gps?.maxSpeed||0, Provincias:(r.gps?.provinces||[]).join(' | '), Conciliacion:r.gps?.agreement||''
@@ -210,28 +211,6 @@ export function exportPdf(rows=currentRows){
   ]);
   doc.autoTable({startY:27,head:[['Inicio','Solicitante','Proyecto','Destino','Km SP','Km GPS','Conciliación']],body,styles:{fontSize:7,cellPadding:1.8},headStyles:{fontSize:7},columnStyles:{3:{cellWidth:68}}});
   doc.save('movilizaciones-fias.pdf');
-}
-
-function deltaText(a,b,kind='number'){
-  const d=b-a;
-  const sign=d>0?'+':'';
-  if(kind==='pct') return `${sign}${fmt1(d)} pp`;
-  if(kind==='hours') return `${sign}${fmt1(d)} h`;
-  if(kind==='km') return `${sign}${fmt1(d)} km`;
-  return `${sign}${fmtInt(d)}`;
-}
-function comparisonCard(label,a,b,format,kind){
-  return `<article class="comparison-card"><span>${escapeHtml(label)}</span><div><strong>${escapeHtml(format(a))}</strong><i class="bi bi-arrow-right"></i><strong>${escapeHtml(format(b))}</strong></div><small>Variación B vs. A: ${escapeHtml(deltaText(a,b,kind))}</small></article>`;
-}
-export function renderComparison(rowsA=[],rowsB=[],labels={a:'Período A',b:'Período B'}){
-  const box=$('comparisonGrid'); if(!box)return;
-  const A=kpis(rowsA),B=kpis(rowsB);
-  box.innerHTML=`<div class="comparison-head"><span>${escapeHtml(labels.a)}</span><i class="bi bi-arrow-left-right"></i><span>${escapeHtml(labels.b)}</span></div>`+[
-    comparisonCard('Movilizaciones',A.movements,B.movements,x=>fmtInt(x),'number'),
-    comparisonCard('Kilometraje SharePoint',A.sharepointKm,B.sharepointKm,x=>fmtKm(x),'km'),
-    comparisonCard('Tiempo de uso',A.totalUseHours,B.totalUseHours,x=>`${fmt1(x)} h`,'hours'),
-    comparisonCard('Conciliación GPS',A.gpsMatchRate,B.gpsMatchRate,x=>fmtPct(x),'pct')
-  ].join('');
 }
 
 export function renderAll(rows=currentRows,all=allRows){setRows(rows,all);renderOverview(rows);renderTerritory(rows);renderOperations(rows);renderFleet(rows);renderGps(rows);renderQuality(rows);}

@@ -1,19 +1,19 @@
-import { APP_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.1';
-import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics, isGpsAdministrator, getAuthenticatedEmail } from './auth.js?v=2.1.1';
-import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=2.1.1';
-import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=2.1.1';
-import { filterMovements } from './analytics.js?v=2.1.1';
-import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=2.1.1';
-import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt, formatDateTime } from './utils.js?v=2.1.1';
-import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, exportXlsx, exportPdf, renderComparison, bindDashboardCallbacks } from './dashboard.js?v=2.1.1';
-import { uploadGpsPdf, listPendingUploads, loadGpsHistory, adminStatus, validateGpsPdf } from './admin.js?v=2.1.1';
+import { APP_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
+import { initAuth, login, logout, isAuthenticated, getAccount, authDiagnostics, isGpsAdministrator, getAuthenticatedEmail } from './auth.js?v=2.2.0';
+import { discoverLists, chooseList, loadItems, normalizeItems, saveMapping, sharepointState } from './sharepoint.js?v=2.2.0';
+import { loadGpsData, reconcileMovements, gpsState } from './gps.js?v=2.2.0';
+import { filterMovements } from './analytics.js?v=2.2.0';
+import { initMap, invalidateMap, showCoverage, showFrequentRoutes, showGpsHeat, showAllGpsTrace, showTrip } from './maps.js?v=2.2.0';
+import { $, $$, debounce, escapeHtml, setLoading, toast, fmtInt, formatDateTime } from './utils.js?v=2.2.0';
+import { renderAll, renderSourceModal, openSourceModal, closeSourceModal, closeDetail, collectMapping, exportCsv, exportXlsx, exportPdf, bindDashboardCallbacks } from './dashboard.js?v=2.2.0';
+import { uploadGpsPdf, listPendingUploads, loadGpsHistory, adminStatus, validateGpsPdf } from './admin.js?v=2.2.0';
 
 const state={all:[],filtered:[],mapMode:'coverage',ready:false,selectedGpsFiles:[],activeView:'overview'};
 const VIEW_META={
   overview:['Panorama operativo','Indicadores y patrones relevantes del uso institucional de vehículos.'],
   territory:['Cobertura territorial','Rutas GPS, concentración espacial y puntos recurrentes de movilización.'],
   operations:['Explorador de movilizaciones','Cruce de registros SharePoint con evidencia satelital.'],
-  fleet:['Uso y demanda','Comparación por grupos, usuarios, vehículos y períodos de utilización.'],
+  fleet:['Uso y demanda','Distribución de uso por grupos, usuarios, vehículos y días de utilización.'],
   gps:['Rastreo satelital','Trazas, eventos y métricas derivadas de los reportes GPS.'],
   quality:['Control de datos','Completitud, conciliación y excepciones que requieren revisión.'],
   admin:['Administración GPS','Carga controlada, cola de procesamiento e historial de auditoría de reportes satelitales.']
@@ -81,7 +81,7 @@ async function syncAll(){
     const movements=normalizeItems();
     state.all=reconcileMovements(movements);
     state.ready=true;
-    populateFilters(); setComparisonDefaults(); applyFilters(false); updateConnection(true);
+    populateFilters(); applyFilters(false); updateConnection(true);
     if(isGpsAdministrator()&&state.activeView==='admin') await refreshAdmin(false);
     toast('Sincronización completa',`${fmtInt(state.all.length)} movilizaciones · ${fmtInt(gpsState.points.length)} puntos GPS.`);
   }catch(err){
@@ -95,7 +95,7 @@ async function changeList(id){
   try{
     await chooseList(id);await loadItems();
     state.all=reconcileMovements(normalizeItems());
-    populateFilters();setComparisonDefaults();applyFilters(false);renderSourceModal();closeSourceModal();updateConnection(true);
+    populateFilters();applyFilters(false);renderSourceModal();closeSourceModal();updateConnection(true);
     toast('Lista activada',sharepointState.activeList?.displayName||sharepointState.activeList?.name||'SharePoint');
   }catch(err){toast('No se pudo cambiar la lista',err.message||String(err),'bad');}
   finally{setLoading(false);}
@@ -110,7 +110,6 @@ function populateFilters(){
   if(dates.length){
     const min=dateInput(dates[0]),max=dateInput(dates.at(-1));
     $('fFrom').min=min;$('fFrom').max=max;$('fTo').min=min;$('fTo').max=max;
-    ['cmpAFrom','cmpATo','cmpBFrom','cmpBTo'].forEach(id=>{$(id).min=min;$(id).max=max;});
   }
 }
 function unique(arr){return [...new Set(arr.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'es'));}
@@ -147,24 +146,6 @@ function applyFilters(showToast=false){
   if(showToast)toast('Filtros aplicados',`${fmtInt(state.filtered.length)} movilizaciones visibles.`);
 }
 function resetFilters(){['fSearch','fFrom','fTo','fGroup','fRequester','fVehicle','fActivity'].forEach(id=>$(id).value='');applyFilters();}
-
-function setComparisonDefaults(){
-  if(!$('cmpAFrom')||$('cmpAFrom').value||!state.all.length)return;
-  const dates=state.all.map(r=>r.start).filter(Boolean).sort((a,b)=>a-b); if(!dates.length)return;
-  const last=dates.at(-1);
-  const bStart=new Date(last.getFullYear(),last.getMonth(),1),bEnd=new Date(last.getFullYear(),last.getMonth()+1,0);
-  const aStart=new Date(last.getFullYear(),last.getMonth()-1,1),aEnd=new Date(last.getFullYear(),last.getMonth(),0);
-  $('cmpAFrom').value=dateInput(aStart);$('cmpATo').value=dateInput(aEnd);$('cmpBFrom').value=dateInput(bStart);$('cmpBTo').value=dateInput(bEnd);
-  comparePeriods();
-}
-function comparePeriods(){
-  const base=currentFilters(); delete base.from; delete base.to;
-  const af=$('cmpAFrom').value,at=$('cmpATo').value,bf=$('cmpBFrom').value,bt=$('cmpBTo').value;
-  if(!af||!at||!bf||!bt){toast('Comparación','Seleccione las cuatro fechas para comparar.','warn');return;}
-  const A=filterMovements(state.all,{...base,from:af,to:at});
-  const B=filterMovements(state.all,{...base,from:bf,to:bt});
-  renderComparison(A,B,{a:`${af} → ${at}`,b:`${bf} → ${bt}`});
-}
 
 function updateConnection(ok){
   $('connectionPill').classList.toggle('ok',ok);
@@ -268,7 +249,6 @@ function bindEvents(){
   $('btnCloseFilters').addEventListener('click',()=>setFiltersOpen(false));
   $('filterSummary').addEventListener('click',e=>{const chip=e.target.closest('[data-clear-filter]');if(!chip)return;const input=$(chip.dataset.clearFilter);if(input){input.value='';applyFilters();}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('globalFilters').classList.contains('collapsed'))setFiltersOpen(false);});
-  $('btnCompare').addEventListener('click',comparePeriods);
   $('mapModes').addEventListener('click',e=>{const b=e.target.closest('button[data-map]');if(b)setMapMode(b.dataset.map);});
   $('btnExportCsv').addEventListener('click',()=>safeExport(exportCsv,'Exportación CSV'));
   $('btnExportXlsx').addEventListener('click',()=>safeExport(exportXlsx,'Exportación Excel'));
@@ -280,7 +260,7 @@ function bindEvents(){
   $('sourceModal').addEventListener('click',e=>{if(e.target===$('sourceModal'))closeSourceModal();});
   $('btnApplyMapping').addEventListener('click',()=>{
     saveMapping(collectMapping());
-    state.all=reconcileMovements(normalizeItems());populateFilters();setComparisonDefaults();applyFilters(false);closeSourceModal();toast('Mapeo aplicado','La analítica fue reprocesada con los campos seleccionados.');
+    state.all=reconcileMovements(normalizeItems());populateFilters();applyFilters(false);closeSourceModal();toast('Mapeo aplicado','La analítica fue reprocesada con los campos seleccionados.');
   });
   $('gpsPdfInput').addEventListener('change',e=>selectedFiles([...e.target.files]));
   const dz=$('gpsDropzone');

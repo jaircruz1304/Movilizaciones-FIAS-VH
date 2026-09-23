@@ -1,6 +1,6 @@
-import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.1';
-import { graph, graphPaged } from './graph.js?v=2.1.1';
-import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.1.1';
+import { SHAREPOINT_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
+import { graph, graphPaged } from './graph.js?v=2.2.0';
+import { compactKey, normalizeText, textValue, toDate, toNumber, hoursBetween } from './utils.js?v=2.2.0';
 
 const SEMANTICS={
   start:{label:'Fecha inicio uso',aliases:['fecha inicia uso','fecha inicio uso','fechainiciauso','fechainiciouso','fecha inicio','inicio uso','fecha salida','fecha movilizacion','fecha viaje']},
@@ -397,12 +397,104 @@ function fieldRaw(fields,key){
   return '';
 }
 
-const PLACE_WORDS=['quito','cayambe','cotacachi','ibarra','manta','portoviejo','machala','guayaquil','cuenca','latacunga','salcedo','ambato','riobamba','macas','puyo','tena','archidona','loreto','otavalo','atuntaqui','machachi','sangolqui','tabacundo','pedro moncayo','esmeraldas','loja','zamora','el pangui','sucumbios','lago agrio','orellana','coca','manabi','imbabura','cotopaxi','tungurahua','chimborazo','napo','pastaza','pichincha','morona santiago'];
+const DESTINATION_PLACES=[
+  {label:'Quito',province:'Pichincha',aliases:['quito','distrito metropolitano de quito','dmq']},
+  {label:'Cayambe',province:'Pichincha',aliases:['cayambe']},
+  {label:'Tabacundo',province:'Pichincha',aliases:['tabacundo']},
+  {label:'Pedro Moncayo',province:'Pichincha',aliases:['pedro moncayo']},
+  {label:'Machachi',province:'Pichincha',aliases:['machachi']},
+  {label:'Sangolquí',province:'Pichincha',aliases:['sangolqui','ruminahui','rumiñahui']},
+  {label:'Mindo',province:'Pichincha',aliases:['mindo']},
+  {label:'Ibarra',province:'Imbabura',aliases:['ibarra']},
+  {label:'Otavalo',province:'Imbabura',aliases:['otavalo']},
+  {label:'Cotacachi',province:'Imbabura',aliases:['cotacachi']},
+  {label:'Atuntaqui',province:'Imbabura',aliases:['atuntaqui','antonio ante']},
+  {label:'Tulcán',province:'Carchi',aliases:['tulcan']},
+  {label:'Esmeraldas',province:'Esmeraldas',aliases:['esmeraldas']},
+  {label:'Atacames',province:'Esmeraldas',aliases:['atacames']},
+  {label:'Santo Domingo',province:'Santo Domingo de los Tsáchilas',aliases:['santo domingo','santo domingo de los tsachilas']},
+  {label:'Latacunga',province:'Cotopaxi',aliases:['latacunga']},
+  {label:'Salcedo',province:'Cotopaxi',aliases:['salcedo']},
+  {label:'Ambato',province:'Tungurahua',aliases:['ambato']},
+  {label:'Baños',province:'Tungurahua',aliases:['banos de agua santa','baños de agua santa','banos']},
+  {label:'Riobamba',province:'Chimborazo',aliases:['riobamba']},
+  {label:'Guaranda',province:'Bolívar',aliases:['guaranda']},
+  {label:'Puyo',province:'Pastaza',aliases:['puyo']},
+  {label:'Tena',province:'Napo',aliases:['tena']},
+  {label:'Archidona',province:'Napo',aliases:['archidona']},
+  {label:'El Chaco',province:'Napo',aliases:['el chaco']},
+  {label:'Nueva Loja',province:'Sucumbíos',aliases:['nueva loja','lago agrio']},
+  {label:'Shushufindi',province:'Sucumbíos',aliases:['shushufindi']},
+  {label:'Puerto Francisco de Orellana',province:'Orellana',aliases:['puerto francisco de orellana','el coca','coca']},
+  {label:'Loreto',province:'Orellana',aliases:['loreto']},
+  {label:'Macas',province:'Morona Santiago',aliases:['macas']},
+  {label:'Sucúa',province:'Morona Santiago',aliases:['sucua']},
+  {label:'Cuenca',province:'Azuay',aliases:['cuenca']},
+  {label:'Azogues',province:'Cañar',aliases:['azogues']},
+  {label:'Loja',province:'Loja',aliases:['loja']},
+  {label:'Zamora',province:'Zamora Chinchipe',aliases:['zamora']},
+  {label:'El Pangui',province:'Zamora Chinchipe',aliases:['el pangui','pangui']},
+  {label:'Yantzaza',province:'Zamora Chinchipe',aliases:['yantzaza']},
+  {label:'Guayaquil',province:'Guayas',aliases:['guayaquil']},
+  {label:'Durán',province:'Guayas',aliases:['duran','durán']},
+  {label:'Milagro',province:'Guayas',aliases:['milagro']},
+  {label:'Babahoyo',province:'Los Ríos',aliases:['babahoyo']},
+  {label:'Quevedo',province:'Los Ríos',aliases:['quevedo']},
+  {label:'Portoviejo',province:'Manabí',aliases:['portoviejo']},
+  {label:'Manta',province:'Manabí',aliases:['manta']},
+  {label:'Jipijapa',province:'Manabí',aliases:['jipijapa']},
+  {label:'Machala',province:'El Oro',aliases:['machala']},
+  {label:'Santa Rosa',province:'El Oro',aliases:['santa rosa']},
+  {label:'Santa Elena',province:'Santa Elena',aliases:['santa elena']},
+  {label:'Salinas',province:'Santa Elena',aliases:['salinas']}
+];
+
+const DESTINATION_PROVINCES=[
+  ['Azuay',['azuay']],['Bolívar',['bolivar']],['Cañar',['canar']],['Carchi',['carchi']],['Chimborazo',['chimborazo']],
+  ['Cotopaxi',['cotopaxi']],['El Oro',['el oro']],['Esmeraldas',['esmeraldas']],['Guayas',['guayas']],['Imbabura',['imbabura']],
+  ['Loja',['loja']],['Los Ríos',['los rios']],['Manabí',['manabi']],['Morona Santiago',['morona santiago']],['Napo',['napo']],
+  ['Orellana',['orellana']],['Pastaza',['pastaza']],['Pichincha',['pichincha']],['Santa Elena',['santa elena']],
+  ['Santo Domingo de los Tsáchilas',['santo domingo de los tsachilas']],['Sucumbíos',['sucumbios']],['Tungurahua',['tungurahua']],
+  ['Zamora Chinchipe',['zamora chinchipe']]
+].map(([label,aliases])=>({label,aliases}));
+
+function phraseIndex(haystack,needle){
+  const hay=` ${normalizeText(haystack)} `, key=` ${normalizeText(needle)} `;
+  return hay.lastIndexOf(key);
+}
+
+export function extractDestinationGeo(text){
+  const raw=String(text||'').replace(/\s+/g,' ').trim();
+  if(!raw)return {label:'Por identificar',province:'',kind:'unknown',confidence:0,source:'none'};
+  const placeHits=[];
+  for(const place of DESTINATION_PLACES){
+    let idx=-1;
+    for(const alias of place.aliases) idx=Math.max(idx,phraseIndex(raw,alias));
+    if(idx>=0) placeHits.push({...place,index:idx});
+  }
+  if(placeHits.length){
+    // Quito es el origen institucional habitual. Si el texto también contiene otro lugar,
+    // priorizamos el último destino distinto de Quito para evitar etiquetar rutas como "Quito".
+    const ordered=placeHits.sort((a,b)=>a.index-b.index);
+    const outsideOrigin=ordered.filter(x=>x.label!=='Quito');
+    const chosen=(outsideOrigin.length?outsideOrigin:ordered).at(-1);
+    return {label:chosen.label,province:chosen.province,kind:'place',confidence:3,source:'text'};
+  }
+  const provinceHits=[];
+  for(const province of DESTINATION_PROVINCES){
+    let idx=-1;
+    for(const alias of province.aliases) idx=Math.max(idx,phraseIndex(raw,alias));
+    if(idx>=0) provinceHits.push({...province,index:idx});
+  }
+  if(provinceHits.length){
+    const chosen=provinceHits.sort((a,b)=>a.index-b.index).at(-1);
+    return {label:chosen.label,province:chosen.label,kind:'province',confidence:2,source:'text'};
+  }
+  return {label:'Por identificar',province:'',kind:'unknown',confidence:0,source:'text'};
+}
+
 export function extractDestinationLabel(text){
-  const raw=String(text||'').trim(); if(!raw)return 'Sin destino';
-  const n=normalizeText(raw); const hits=[];
-  for(const p of PLACE_WORDS) if(n.includes(normalizeText(p))) hits.push(p.replace(/\b\w/g,c=>c.toUpperCase()));
-  return hits.length?[...new Set(hits)].slice(0,3).join(' · '):(raw.length>58?`${raw.slice(0,55)}…`:raw);
+  return extractDestinationGeo(text).label;
 }
 
 export function categorizeActivity(text){
@@ -432,6 +524,7 @@ export function normalizeItems(items=state.items){
     let distance=toNumber(fieldRaw(f,'distance'));
     if(!distance && kmEnd>=kmStart && kmEnd>0) distance=kmEnd-kmStart;
     const destination=textValue(fieldRaw(f,'destination'));
+    const destinationGeo=extractDestinationGeo(destination);
     const activity=textValue(fieldRaw(f,'activity'))||destination;
     const group=textValue(fieldRaw(f,'group'));
     const project=textValue(fieldRaw(f,'project'))||group;
@@ -442,7 +535,11 @@ export function normalizeItems(items=state.items){
       requester:textValue(fieldRaw(f,'requester')),
       group,
       destination,
-      destinationLabel:extractDestinationLabel(destination),
+      destinationLabel:destinationGeo.label,
+      destinationProvince:destinationGeo.province,
+      destinationKind:destinationGeo.kind,
+      destinationSource:destinationGeo.source,
+      destinationConfidence:destinationGeo.confidence,
       kmStart,kmEnd,distance,
       vehicle,
       plate:textValue(fieldRaw(f,'plate')),

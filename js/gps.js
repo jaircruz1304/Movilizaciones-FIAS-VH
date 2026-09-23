@@ -1,7 +1,7 @@
-import { GPS_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.1.1';
-import { haversineKm, normalizeText, percentile } from './utils.js?v=2.1.1';
-import { graph } from './graph.js?v=2.1.1';
-import { resolveGpsSite } from './sharepoint.js?v=2.1.1';
+import { GPS_CONFIG, SHAREPOINT_GPS_CONFIG } from '../config/msal-config.js?v=2.2.0';
+import { haversineKm, normalizeText, percentile } from './utils.js?v=2.2.0';
+import { graph } from './graph.js?v=2.2.0';
+import { resolveGpsSite, extractDestinationGeo } from './sharepoint.js?v=2.2.0';
 
 const gpsState={manifest:null,points:[],trackers:new Map(),loaded:false,source:'SharePoint protegido'};
 export { gpsState };
@@ -170,6 +170,40 @@ export function gpsMetrics(points){
   };
 }
 
+function titleProvince(value=''){
+  const n=normalizeText(value);
+  const found={
+    'azuay':'Azuay','bolivar':'Bolívar','canar':'Cañar','carchi':'Carchi','chimborazo':'Chimborazo','cotopaxi':'Cotopaxi',
+    'el oro':'El Oro','esmeraldas':'Esmeraldas','guayas':'Guayas','imbabura':'Imbabura','loja':'Loja','los rios':'Los Ríos',
+    'manabi':'Manabí','morona santiago':'Morona Santiago','napo':'Napo','orellana':'Orellana','pastaza':'Pastaza','pichincha':'Pichincha',
+    'santa elena':'Santa Elena','santo domingo':'Santo Domingo de los Tsáchilas','santo domingo de los tsachilas':'Santo Domingo de los Tsáchilas',
+    'sucumbios':'Sucumbíos','tungurahua':'Tungurahua','zamora chinchipe':'Zamora Chinchipe'
+  };
+  return found[n]||String(value||'').replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+function consolidateDestination(movement,metrics){
+  const textGeo=extractDestinationGeo(movement.destination||'');
+  const gpsGeo=extractDestinationGeo(metrics?.remote?.place||'');
+  let chosen=textGeo;
+  // El punto GPS más alejado del origen es una evidencia más sólida de destino cuando
+  // permite reconocer una ciudad/cantón. Si solo identifica provincia, conservamos
+  // un destino textual más específico.
+  if(gpsGeo.kind==='place' && gpsGeo.label!=='Quito') chosen={...gpsGeo,source:'GPS'};
+  else if(textGeo.kind==='place') chosen={...textGeo,source:'SharePoint'};
+  else if(gpsGeo.kind==='province') chosen={...gpsGeo,source:'GPS'};
+  else if(textGeo.kind==='province') chosen={...textGeo,source:'SharePoint'};
+  else {
+    const provinces=metrics?.provinces||[];
+    const outward=provinces.find(p=>normalizeText(p)!=='pichincha')||provinces[0]||'';
+    if(outward){
+      const province=titleProvince(outward);
+      chosen={label:province,province,kind:'province',confidence:1,source:'GPS'};
+    }else chosen={label:'Por identificar',province:'',kind:'unknown',confidence:0,source:'none'};
+  }
+  return chosen;
+}
+
 export function reconcileMovements(movements){
   const trackers=[...gpsState.trackers.keys()];
   return movements.map(m=>{
@@ -190,8 +224,14 @@ export function reconcileMovements(movements){
     const diff=spKm&&gpsKm?Math.abs(spKm-gpsKm):0;
     const diffPct=spKm&&gpsKm?diff/Math.max(spKm,gpsKm)*100:0;
     const agreement=!spKm||!gpsKm?'Referencia':diffPct<=10?'Alta':diffPct<=25?'Media':'Revisar';
+    const destinationGeo=consolidateDestination(m,best.metrics);
     return {
       ...m,
+      destinationLabel:destinationGeo.label,
+      destinationProvince:destinationGeo.province,
+      destinationKind:destinationGeo.kind,
+      destinationSource:destinationGeo.source,
+      destinationConfidence:destinationGeo.confidence,
       gps:{tracker:best.tracker,...best.metrics,differenceKm:diff,differencePct:diffPct,agreement},
       gpsTrace:best.pts,
       gpsStatus:'Relacionado'
