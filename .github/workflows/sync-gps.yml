@@ -1,9 +1,10 @@
 name: Sincronizar GPS desde SharePoint
 
 on:
-  schedule:
-    # ~cada 5 minutos, desplazado del minuto 0 para reducir congestión del scheduler.
-    - cron: '2-59/5 * * * *'
+  repository_dispatch:
+    types:
+      - gps_uploaded
+      - sharepoint_list_changed
   workflow_dispatch:
 
 concurrency:
